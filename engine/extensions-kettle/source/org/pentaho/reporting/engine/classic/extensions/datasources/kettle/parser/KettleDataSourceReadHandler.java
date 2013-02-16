@@ -38,6 +38,12 @@ public class KettleDataSourceReadHandler extends AbstractXmlReadHandler
     queries = new ArrayList<KettleTransformationProducerReadHandler>();
   }
 
+  public KettleDataSourceReadHandler(DataFactory dataFactory)
+  {
+    this();
+    this.dataFactory = dataFactory;
+  }
+
   /**
    * Returns the handler for a child element.
    *
@@ -78,7 +84,8 @@ public class KettleDataSourceReadHandler extends AbstractXmlReadHandler
    */
   protected void doneParsing() throws SAXException
   {
-    final KettleDataFactory srdf = new KettleDataFactory();
+    final KettleDataFactory srdf;      
+    srdf = (dataFactory == null) ? new KettleDataFactory() : (KettleDataFactory)dataFactory;
     for (int i = 0; i < queries.size(); i++)
     {
       final KettleTransformationProducerReadHandler handler = queries.get(i);
