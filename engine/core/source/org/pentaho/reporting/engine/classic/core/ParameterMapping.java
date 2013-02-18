@@ -84,4 +84,36 @@ public class ParameterMapping implements Serializable
   {
     return alias;
   }
+
+  public boolean equals(final Object o)
+  {
+    if (this == o)
+    {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass())
+    {
+      return false;
+    }
+
+    final ParameterMapping that = (ParameterMapping) o;
+
+    if (alias != null ? !alias.equals(that.alias) : that.alias != null)
+    {
+      return false;
+    }
+    if (name != null ? !name.equals(that.name) : that.name != null)
+    {
+      return false;
+    }
+
+    return true;
+  }
+
+  public int hashCode()
+  {
+    int result = name != null ? name.hashCode() : 0;
+    result = 31 * result + (alias != null ? alias.hashCode() : 0);
+    return result;
+  }
 }
