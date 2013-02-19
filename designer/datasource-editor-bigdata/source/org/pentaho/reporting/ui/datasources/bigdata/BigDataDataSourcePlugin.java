@@ -105,7 +105,7 @@ public class BigDataDataSourcePlugin implements DataSourcePlugin
       }
       else
       {
-        final BigDataQueryTransformationProducer query = bigDataDataFactory.getQuery(id);
+        final BigDataQueryTransformationProducer query = bigDataDataFactory.getQuery("big-data-query");
         if (query == null)
         {
           transMeta = loadTransformation(cls);
@@ -130,8 +130,8 @@ public class BigDataDataSourcePlugin implements DataSourcePlugin
         final BigDataDataFactory retval = new BigDataDataFactory();
 
         // todo: No parameter definitions here!
-        retval.setQuery(id, new BigDataQueryTransformationProducer(new String[0], new ParameterMapping[0], 
-                                                                             id, cls.getStepName(), rawData));
+        retval.setQuery("big-data-query",
+            new BigDataQueryTransformationProducer(new String[0], new ParameterMapping[0], id, cls.getStepName(), rawData));
         return retval;
       }
 

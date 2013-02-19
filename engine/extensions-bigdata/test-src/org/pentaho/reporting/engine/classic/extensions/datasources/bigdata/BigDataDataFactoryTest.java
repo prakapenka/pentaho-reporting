@@ -36,7 +36,7 @@ public class BigDataDataFactoryTest extends TestCase
     final ParameterMapping[] parameterMappings = {new ParameterMapping("name", "alias"),
         new ParameterMapping("name2", "alias2")};
     final byte[] raw = {0, 1, 2, 3, 4, 5};
-    dataFactory.setQuery(new BigDataQueryTransformationProducer(argumentNames,
+    dataFactory.setQuery("big-data-query", new BigDataQueryTransformationProducer(argumentNames,
         parameterMappings, "MongoDB", raw));
 
     final BigDataDataFactory result = (BigDataDataFactory) saveAndLoad(dataFactory);
@@ -44,7 +44,7 @@ public class BigDataDataFactoryTest extends TestCase
     assertEquals(1, queryNames.length);
     assertEquals("big-data-query", queryNames[0]);
 
-    final BigDataQueryTransformationProducer query = result.getQuery();
+    final BigDataQueryTransformationProducer query = result.getQuery("big-data-query");
     assertTrue(Arrays.equals(raw, query.getBigDataTransformationRaw()));
     assertEquals("MongoDB", query.getPluginId());
     assertTrue(Arrays.equals(argumentNames, query.getDefinedArgumentNames()));
