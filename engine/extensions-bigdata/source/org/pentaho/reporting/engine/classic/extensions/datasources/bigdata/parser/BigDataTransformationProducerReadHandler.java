@@ -54,7 +54,7 @@ public class BigDataTransformationProducerReadHandler extends AbstractKettleTran
     final String result = resourceReadHandler.getResult();
     final byte[] bytes = Base64.decode(result.toCharArray());
     return new BigDataQueryTransformationProducer
-        (getDefinedArgumentNames(), getDefinedVariableNames(), pluginId, bytes);
+        (getDefinedArgumentNames(), getDefinedVariableNames(), pluginId, name, bytes);
   }
 
   public BigDataQueryTransformationProducer getTransformationProducer() throws SAXException

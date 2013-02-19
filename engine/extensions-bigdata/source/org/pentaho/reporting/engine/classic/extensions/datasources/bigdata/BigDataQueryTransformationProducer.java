@@ -34,9 +34,10 @@ public class BigDataQueryTransformationProducer extends AbstractKettleTransforma
   public BigDataQueryTransformationProducer(final String[] definedArgumentNames,
                                             final ParameterMapping[] definedVariableNames,
                                             final String pluginId,
+                                            final String stepName,
                                             final byte[] bigDataTransformationRaw)
   {
-    super("", null, null, null, definedArgumentNames, definedVariableNames);
+    super("", stepName, null, null, definedArgumentNames, definedVariableNames);
 
     this.pluginId = pluginId;
     this.bigDataTransformationRaw = bigDataTransformationRaw.clone();
