@@ -61,6 +61,8 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="datasource-editor-bigdata" exported="" />
+    <orderEntry type="module" module-name="datasource-editor-openerp" exported="" />
   </component>
   <component name="copyright">
     <Base>

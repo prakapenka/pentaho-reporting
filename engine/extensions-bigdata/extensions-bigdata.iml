@@ -9,6 +9,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="extensions-kettle" exported="" />
+    <orderEntry type="module" module-name="pentaho-mongodb-plugin" exported="" />
   </component>
 </module>
 
