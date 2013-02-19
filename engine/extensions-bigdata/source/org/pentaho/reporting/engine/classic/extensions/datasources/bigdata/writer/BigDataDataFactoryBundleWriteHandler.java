@@ -83,6 +83,7 @@ public class BigDataDataFactoryBundleWriteHandler implements BundleDataFactoryWr
     // the name is static for now
     coreAttrs.setAttribute(BigDataDataFactoryModule.NAMESPACE, "name", queryName);
     coreAttrs.setAttribute(BigDataDataFactoryModule.NAMESPACE, "plugin-id", fileProducer.getPluginId());
+    coreAttrs.setAttribute(BigDataDataFactoryModule.NAMESPACE, "stepname", fileProducer.getStepName());
 
     final String[] definedArgumentNames = fileProducer.getDefinedArgumentNames();
     final ParameterMapping[] parameterMappings = fileProducer.getDefinedVariableNames();

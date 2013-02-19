@@ -15,6 +15,7 @@ public class BigDataTransformationProducerReadHandler extends AbstractKettleTran
   private String pluginId;
   private StringReadHandler resourceReadHandler;
   private String name;
+  private String stepName;
 
   public BigDataTransformationProducerReadHandler()
   {
@@ -25,7 +26,9 @@ public class BigDataTransformationProducerReadHandler extends AbstractKettleTran
     // note: We do not call super here
     pluginId = attrs.getValue(getUri(), "plugin-id");
     name = attrs.getValue(getUri(), "name");
+    stepName = attrs.getValue(getUri(), "stepname");
   }
+
 
   public String getName()
   {
@@ -54,7 +57,7 @@ public class BigDataTransformationProducerReadHandler extends AbstractKettleTran
     final String result = resourceReadHandler.getResult();
     final byte[] bytes = Base64.decode(result.toCharArray());
     return new BigDataQueryTransformationProducer
-        (getDefinedArgumentNames(), getDefinedVariableNames(), pluginId, name, bytes);
+        (getDefinedArgumentNames(), getDefinedVariableNames(), pluginId, stepName, bytes);
   }
 
   public BigDataQueryTransformationProducer getTransformationProducer() throws SAXException
