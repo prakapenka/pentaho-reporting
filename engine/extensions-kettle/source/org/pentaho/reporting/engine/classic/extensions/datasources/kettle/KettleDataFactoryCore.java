@@ -34,4 +34,9 @@ public class KettleDataFactoryCore extends DefaultDataFactoryCore
     final KettleDataFactory kettleDataFactory = (KettleDataFactory) dataFactory;
     return kettleDataFactory.getQueryHash(queryName);
   }
+
+  public String getDisplayConnectionName(final DataFactoryMetaData metaData, final DataFactory dataFactory)
+  {
+    return "I come from KettleDataFactoryCore. Change me!";
+  }
 }
