@@ -20,6 +20,7 @@ package org.pentaho.reporting.engine.classic.extensions.datasources.kettle;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.pentaho.di.core.KettleEnvironment;
+import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryRegistry;
 import org.pentaho.reporting.engine.classic.core.metadata.ElementMetaDataParser;
 import org.pentaho.reporting.engine.classic.core.modules.parser.base.DataFactoryReadHandlerFactory;
 import org.pentaho.reporting.engine.classic.core.modules.parser.base.DataFactoryXmlResourceFactory;
@@ -83,5 +84,10 @@ public class KettleDataFactoryModule extends AbstractModule
     ElementMetaDataParser.initializeOptionalDataFactoryMetaData
         ("org/pentaho/reporting/engine/classic/extensions/datasources/kettle/meta-datafactory.xml");
 
+    // Sample code, register some additional handlers.
+    // You would probably read the transformations directory.
+    DataFactoryRegistry.getInstance().register(new EmbeddedKettleDataFactoryMetaData("transformations/MongoDB.ktr", "Mongo DB", "mongo-plugin-id"));
+    DataFactoryRegistry.getInstance().register(new EmbeddedKettleDataFactoryMetaData("transformations/Cassandra.ktr", "Cassanda DB", "cassandra-plugin-id"));
+    DataFactoryRegistry.getInstance().register(new EmbeddedKettleDataFactoryMetaData("transformations/Pony-DB.ktr", "Pony DB", "pony-plugin-id"));
   }
 }

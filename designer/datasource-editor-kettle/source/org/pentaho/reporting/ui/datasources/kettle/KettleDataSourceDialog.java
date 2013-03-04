@@ -38,6 +38,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
@@ -60,6 +61,7 @@ import org.pentaho.reporting.engine.classic.core.ReportDataFactoryException;
 import org.pentaho.reporting.engine.classic.core.designtime.DesignTimeContext;
 import org.pentaho.reporting.engine.classic.core.designtime.DesignTimeUtil;
 import org.pentaho.reporting.engine.classic.core.designtime.datafactory.DataFactoryEditorSupport;
+import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryMetaData;
 import org.pentaho.reporting.engine.classic.core.modules.gui.commonswing.ExceptionDialog;
 import org.pentaho.reporting.engine.classic.core.util.ReportParameterValues;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleDataFactory;
@@ -857,6 +859,17 @@ public class KettleDataSourceDialog extends CommonDialog
     panel.add(mainPanel, BorderLayout.EAST);
     panel.add(queryListPanel, BorderLayout.CENTER);
     return panel;
+  }
+
+  public KettleDataFactory performCreateUnifiedDataFactory (final DataFactoryMetaData metaData,
+                                                            final String pluginId)
+  {
+    JOptionPane.showConfirmDialog
+        (this, "Hello World?", "I wished I were a database...", JOptionPane.INFORMATION_MESSAGE);
+
+    // feel free to preload the KTR file and to configure the dialog state so that the
+    // mongo-db editor is visible.
+    return null;
   }
 
   public KettleDataFactory performConfiguration(final KettleDataFactory dataFactory,

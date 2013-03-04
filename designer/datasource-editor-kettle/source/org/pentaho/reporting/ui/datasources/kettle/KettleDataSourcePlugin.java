@@ -49,21 +49,27 @@ public class KettleDataSourcePlugin implements DataSourcePlugin
                                  final String queryName,
                                  final DataFactoryChangeRecorder changeRecorder)
   {
-  	 final KettleDataSourceDialog editor;
-     final Window window = context.getParentWindow();
-     if (window instanceof JDialog)
-     {
-       editor = new KettleDataSourceDialog(context, (JDialog) window);
-     }
-     else if (window instanceof JFrame)
-     {
-       editor = new KettleDataSourceDialog(context, (JFrame) window);
-     }
-     else
-     {
-       editor = new KettleDataSourceDialog(context);
-     }
+    final KettleDataSourceDialog editor = createKettleDataSourceDialog(context);
      return editor.performConfiguration((KettleDataFactory) input, queryName);
+  }
+
+  protected KettleDataSourceDialog createKettleDataSourceDialog(final DesignTimeContext context)
+  {
+    final KettleDataSourceDialog editor;
+    final Window window = context.getParentWindow();
+    if (window instanceof JDialog)
+    {
+      editor = new KettleDataSourceDialog(context, (JDialog) window);
+    }
+    else if (window instanceof JFrame)
+    {
+      editor = new KettleDataSourceDialog(context, (JFrame) window);
+    }
+    else
+    {
+      editor = new KettleDataSourceDialog(context);
+    }
+    return editor;
   }
 
   public DataFactoryMetaData getMetaData()
