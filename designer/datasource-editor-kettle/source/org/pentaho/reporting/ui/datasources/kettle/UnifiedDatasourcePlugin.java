@@ -1,9 +1,10 @@
-package org.pentaho.reporting.ui.datasources.bigdata;
+package org.pentaho.reporting.ui.datasources.kettle;
 
 import java.lang.reflect.Constructor;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.pentaho.di.core.exception.KettleMissingPluginsException;
 import org.pentaho.di.core.exception.KettlePluginException;
 import org.pentaho.di.core.exception.KettleXMLException;
 import org.pentaho.di.core.plugins.DataFactoryPluginType;
@@ -23,18 +24,18 @@ import org.pentaho.reporting.engine.classic.core.designtime.DataSourcePlugin;
 import org.pentaho.reporting.engine.classic.core.designtime.DesignTimeContext;
 import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryMetaData;
 import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryRegistry;
-import org.pentaho.reporting.engine.classic.extensions.datasources.bigdata.BigDataDataFactory;
-import org.pentaho.reporting.engine.classic.extensions.datasources.bigdata.BigDataHelper;
-import org.pentaho.reporting.engine.classic.extensions.datasources.bigdata.BigDataQueryTransformationProducer;
+import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.BigDataHelper;
+import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.EmbeddedKettleTransformationProducer;
+import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleDataFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-public class BigDataDataSourcePlugin implements DataSourcePlugin
+public class UnifiedDatasourcePlugin implements DataSourcePlugin
 {
-  private static final Log logger = LogFactory.getLog(BigDataDataSourcePlugin.class);
+  private static final Log logger = LogFactory.getLog(UnifiedDatasourcePlugin.class);
   private String id;
 
-  public BigDataDataSourcePlugin() throws ReportDataFactoryException
+  public UnifiedDatasourcePlugin() throws ReportDataFactoryException
   {
     id = "MongoDB"; // TODO: Allow other datasources.
   }
@@ -50,10 +51,10 @@ public class BigDataDataSourcePlugin implements DataSourcePlugin
 
   public boolean canHandle(final DataFactory dataFactory)
   {
-    return dataFactory instanceof BigDataDataFactory;
+    return dataFactory instanceof KettleDataFactory;
   }
 
-  private TransMeta loadTransformation(final DynamicDatasource cls) throws KettlePluginException, KettleXMLException
+  private TransMeta loadTransformation(final DynamicDatasource cls) throws KettlePluginException, KettleMissingPluginsException, KettleXMLException
   {
     final Document document = BigDataHelper.loadDocumentFromPlugin(cls);
     final Node node = XMLHandler.getSubNode(document, TransMeta.XML_TAG);
@@ -87,25 +88,24 @@ public class BigDataDataSourcePlugin implements DataSourcePlugin
     }
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public DataFactory performEdit(final DesignTimeContext context,
                                  final DataFactory input,
                                  final String queryName,
-                                 final DataFactoryChangeRecorder changeRecorder)
+                                 DataFactoryChangeRecorder recorder)
   {
 
-    final BigDataDataFactory bigDataDataFactory = (BigDataDataFactory) input;
+    final KettleDataFactory KettleDataFactory = (KettleDataFactory) input;
     try
     {
       final DynamicDatasource cls = loadDataSource();
       TransMeta transMeta;
-      if (bigDataDataFactory == null)
+      if (KettleDataFactory == null)
       {
         transMeta = loadTransformation(cls);
       }
       else
       {
-        final BigDataQueryTransformationProducer query = bigDataDataFactory.getQuery("big-data-query");
+        final EmbeddedKettleTransformationProducer query = (EmbeddedKettleTransformationProducer) KettleDataFactory.getQuery("Mongo Query");
         if (query == null)
         {
           transMeta = loadTransformation(cls);
@@ -127,11 +127,11 @@ public class BigDataDataSourcePlugin implements DataSourcePlugin
       {
         transMeta.addOrReplaceStep(step);
         final byte[] rawData = transMeta.getXML().getBytes("UTF8");
-        final BigDataDataFactory retval = new BigDataDataFactory();
+        final KettleDataFactory retval = new KettleDataFactory();
 
         // todo: No parameter definitions here!
-        retval.setQuery("big-data-query",
-            new BigDataQueryTransformationProducer(new String[0], new ParameterMapping[0], id, cls.getStepName(), rawData));
+        retval.setQuery("Mongo Query",
+            new EmbeddedKettleTransformationProducer(new String[0], new ParameterMapping[0], id, cls.getStepName(), rawData));
         return retval;
       }
 
@@ -146,6 +146,6 @@ public class BigDataDataSourcePlugin implements DataSourcePlugin
 
   public DataFactoryMetaData getMetaData()
   {
-    return DataFactoryRegistry.getInstance().getMetaData(BigDataDataFactory.class.getName());
+    return DataFactoryRegistry.getInstance().getMetaData(KettleDataFactory.class.getName());
   }
 }
