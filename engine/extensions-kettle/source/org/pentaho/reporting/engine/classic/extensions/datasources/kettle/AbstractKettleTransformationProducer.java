@@ -50,6 +50,8 @@ import org.pentaho.reporting.libraries.resourceloader.ResourceManager;
 
 public abstract class AbstractKettleTransformationProducer implements KettleTransformationProducer
 {
+  private static final long serialVersionUID = -2287953597208384424L;
+
   protected static class TableProducer implements RowListener
   {
     private TypedTableModel tableModel;
@@ -145,7 +147,7 @@ public abstract class AbstractKettleTransformationProducer implements KettleTran
     {
       final int colCount = rowMeta.size();
       final String fieldNames[] = new String[colCount];
-      final Class fieldTypes[] = new Class[colCount];
+      final Class<?> fieldTypes[] = new Class<?>[colCount];
       for (int columnNo = 0; columnNo < colCount; columnNo++)
       {
         final ValueMetaInterface valueMeta = rowMeta.getValueMeta(columnNo);
@@ -339,61 +341,52 @@ public abstract class AbstractKettleTransformationProducer implements KettleTran
       final Repository repository = connectToRepository();
       try
       {
-        final TransMeta transMeta = loadTransformation(repository, resourceManager, resourceKey);
-        transMeta.setArguments(params);
-        final Trans trans = new Trans(transMeta);
-        for (int i = 0; i < definedVariableNames.length; i++)
+        final ParameterMapping mapping = definedVariableNames[i];
+        final String sourceName = mapping.getName();
+        final String variableName = mapping.getAlias();
+        final Object value = parameters.get(sourceName);
+        if (value != null)
         {
-          final ParameterMapping mapping = definedVariableNames[i];
-          final String sourceName = mapping.getName();
-          final String variableName = mapping.getAlias();
-          final Object value = parameters.get(sourceName);
-          if (value != null)
-          {
-            trans.setParameterValue(variableName, String.valueOf(value));
-          }
+          trans.setParameterValue(variableName, String.valueOf(value));
         }
-
-        transMeta.setInternalKettleVariables();
-        trans.prepareExecution(transMeta.getArguments());
-
-        TableProducer tableProducer = null;
-        final List stepList = trans.getSteps();
-        for (int i = 0; i < stepList.size(); i++)
-        {
-          final StepMetaDataCombi metaDataCombi = (StepMetaDataCombi) stepList.get(i);
-          if (stepName.equals(metaDataCombi.stepname) == false)
-          {
-            continue;
-          }
-          final RowMetaInterface row = transMeta.getStepFields(stepName);
-          tableProducer = new TableProducer(row, queryLimit, stopOnError);
-          metaDataCombi.step.addRowListener(tableProducer);
-          break;
-        }
-
-        if (tableProducer == null)
-        {
-          throw new ReportDataFactoryException("Cannot find the specified transformation step " + stepName);
-        }
-
-        currentlyRunningTransformation = trans;
-        trans.startThreads();
-        trans.waitUntilFinished();
-        trans.cleanup();
-        return tableProducer.getTableModel();
       }
-      finally
+
+      transMeta.setInternalKettleVariables();
+      trans.prepareExecution(transMeta.getArguments());
+
+      TableProducer tableProducer = null;
+      final List<StepMetaDataCombi> stepList = trans.getSteps();
+      for (int i = 0; i < stepList.size(); i++)
       {
-        currentlyRunningTransformation = null;
-        if (repository != null)
+        final StepMetaDataCombi metaDataCombi = (StepMetaDataCombi) stepList.get(i);
+        if (stepName.equals(metaDataCombi.stepname) == false)
         {
-          repository.disconnect();
+          continue;
         }
+        final RowMetaInterface row = transMeta.getStepFields(stepName);
+        tableProducer = new TableProducer(row, queryLimit, stopOnError);
+        metaDataCombi.step.addRowListener(tableProducer);
+        break;
       }
+
+      if (tableProducer == null)
+      {
+        throw new ReportDataFactoryException("Cannot find the specified transformation step " + stepName);
+      }
+
+      currentlyRunningTransformation = trans;
+      trans.startThreads();
+      trans.waitUntilFinished();
+      trans.cleanup();
+      return tableProducer.getTableModel();
     }
     finally
     {
+      currentlyRunningTransformation = null;
+      if (repository != null)
+      {
+        repository.disconnect();
+      }
     }
   }
 
@@ -491,8 +484,8 @@ public abstract class AbstractKettleTransformationProducer implements KettleTran
     retval.add(getStepName());
     retval.add(isStopOnError());
     retval.add(getRepositoryName());
-    retval.add(new ArrayList(Arrays.asList(getDefinedArgumentNames())));
-    retval.add(new ArrayList(Arrays.asList(getDefinedVariableNames())));
+    retval.add(new ArrayList<String>(Arrays.asList(getDefinedArgumentNames())));
+    retval.add(new ArrayList<ParameterMapping>(Arrays.asList(getDefinedVariableNames())));
     return retval;
   }
 }

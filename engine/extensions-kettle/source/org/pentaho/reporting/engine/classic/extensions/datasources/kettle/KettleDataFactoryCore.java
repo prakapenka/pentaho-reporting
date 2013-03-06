@@ -9,7 +9,7 @@ import org.pentaho.reporting.engine.classic.core.metadata.DefaultDataFactoryCore
 
 public class KettleDataFactoryCore extends DefaultDataFactoryCore
 {
-  private static final long serialVersionUID = -8347624479657990545L;
+  private static final long serialVersionUID = -4261783626193997272L;
 
   public KettleDataFactoryCore()
   {
