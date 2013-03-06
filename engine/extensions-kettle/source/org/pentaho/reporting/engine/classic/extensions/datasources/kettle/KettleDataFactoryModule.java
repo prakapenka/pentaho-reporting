@@ -26,6 +26,7 @@ import org.pentaho.reporting.engine.classic.core.modules.parser.base.DataFactory
 import org.pentaho.reporting.engine.classic.core.modules.parser.base.DataFactoryXmlResourceFactory;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.parser.KettleDataSourceReadHandler;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.parser.KettleDataSourceXmlFactoryModule;
+import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.parser.KettleEmbeddedTransReadHandler;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.parser.KettleTransFromFileReadHandler;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.parser.KettleTransformationProducerReadHandler;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.parser.KettleTransformationProducerReadHandlerFactory;
@@ -80,14 +81,17 @@ public class KettleDataFactoryModule extends AbstractModule
 
     KettleTransformationProducerReadHandlerFactory.getInstance().setElementHandler(NAMESPACE, "query-file", KettleTransFromFileReadHandler.class);
     KettleTransformationProducerReadHandlerFactory.getInstance().setElementHandler(NAMESPACE, "query-repository", KettleTransformationProducerReadHandler.class);
+    KettleTransformationProducerReadHandlerFactory.getInstance().setElementHandler(NAMESPACE, "query-embedded", KettleEmbeddedTransReadHandler.class);
 
     ElementMetaDataParser.initializeOptionalDataFactoryMetaData
         ("org/pentaho/reporting/engine/classic/extensions/datasources/kettle/meta-datafactory.xml");
-
+    
     // Sample code, register some additional handlers.
     // You would probably read the transformations directory.
     DataFactoryRegistry.getInstance().register(new EmbeddedKettleDataFactoryMetaData("transformations/MongoDB.ktr", "Mongo DB", "mongo-plugin-id"));
     DataFactoryRegistry.getInstance().register(new EmbeddedKettleDataFactoryMetaData("transformations/Cassandra.ktr", "Cassanda DB", "cassandra-plugin-id"));
     DataFactoryRegistry.getInstance().register(new EmbeddedKettleDataFactoryMetaData("transformations/Pony-DB.ktr", "Pony DB", "pony-plugin-id"));
+
+
   }
 }

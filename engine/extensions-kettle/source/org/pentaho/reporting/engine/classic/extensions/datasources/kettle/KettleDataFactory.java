@@ -165,4 +165,40 @@ public class KettleDataFactory extends AbstractDataFactory
     }
     return transformationProducer.getQueryHash(getResourceManager(), getContextKey());
   }
+  
+  public boolean queriesAreHomogeneous(){
+    
+    if ((queries == null) || (queries.isEmpty()))
+    {
+      return true;
+    }
+    
+    KettleTransformationProducer key = null;
+    for (KettleTransformationProducer producer: queries.values()) {
+      if (key == null)
+      {
+        key = producer;
+        if (!(key instanceof EmbeddedKettleTransformationProducer))
+        {
+          return false;
+        }
+        continue;
+      }
+      if (key.getClass() != producer.getClass()){
+        return false;
+      }
+      if ((key instanceof EmbeddedKettleTransformationProducer) &&
+          (producer instanceof EmbeddedKettleTransformationProducer))
+      {
+        EmbeddedKettleTransformationProducer k = (EmbeddedKettleTransformationProducer)key;
+        EmbeddedKettleTransformationProducer p = (EmbeddedKettleTransformationProducer)producer;
+        if (!k.getPluginId().equals(p.getPluginId()))
+        {
+          return false;
+        }
+      }
+      key=producer;
+    }
+    return true;
+  }
 }

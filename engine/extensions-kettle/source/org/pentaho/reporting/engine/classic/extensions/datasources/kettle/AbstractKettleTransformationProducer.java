@@ -23,12 +23,12 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
+
 import javax.swing.table.TableModel;
 
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.exception.KettleValueException;
-import org.pentaho.di.core.logging.LogWriter;
 import org.pentaho.di.core.plugins.PluginRegistry;
 import org.pentaho.di.core.plugins.RepositoryPluginType;
 import org.pentaho.di.core.row.RowMetaInterface;
@@ -334,11 +334,9 @@ public abstract class AbstractKettleTransformationProducer implements KettleTran
 
     final String[] params = fillArguments(parameters);
 
-    // Sadly Kettle always insists on creating a log-file. There is no way around it (yet).
-    final LogWriter logWriter = LogWriter.getInstance("Kettle-reporting-datasource", false);
     try
     {
-      final Repository repository = connectToRepository(logWriter);
+      final Repository repository = connectToRepository();
       try
       {
         final TransMeta transMeta = loadTransformation(repository, resourceManager, resourceKey);
@@ -396,7 +394,6 @@ public abstract class AbstractKettleTransformationProducer implements KettleTran
     }
     finally
     {
-      logWriter.close();
     }
   }
 
@@ -420,13 +417,9 @@ public abstract class AbstractKettleTransformationProducer implements KettleTran
   }
 
 
-  private Repository connectToRepository(final LogWriter logWriter)
+  private Repository connectToRepository()
       throws ReportDataFactoryException, KettleException
   {
-    if (logWriter == null)
-    {
-      throw new NullPointerException();
-    }
     if (repositoryName == null)
     {
       throw new NullPointerException();

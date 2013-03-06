@@ -27,6 +27,7 @@ import java.awt.event.ActionEvent;
 import java.io.File;
 import java.net.URL;
 import java.util.HashSet;
+
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -56,8 +57,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.reporting.engine.classic.core.AbstractReportDefinition;
+import org.pentaho.reporting.engine.classic.core.DataFactory;
 import org.pentaho.reporting.engine.classic.core.MasterReport;
 import org.pentaho.reporting.engine.classic.core.ReportDataFactoryException;
+import org.pentaho.reporting.engine.classic.core.designtime.DataFactoryChangeRecorder;
 import org.pentaho.reporting.engine.classic.core.designtime.DesignTimeContext;
 import org.pentaho.reporting.engine.classic.core.designtime.DesignTimeUtil;
 import org.pentaho.reporting.engine.classic.core.designtime.datafactory.DataFactoryEditorSupport;
@@ -66,6 +69,7 @@ import org.pentaho.reporting.engine.classic.core.modules.gui.commonswing.Excepti
 import org.pentaho.reporting.engine.classic.core.util.ReportParameterValues;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleDataFactory;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleTransFromFileProducer;
+import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleTransformationProducer;
 import org.pentaho.reporting.libraries.base.util.FilesystemFilter;
 import org.pentaho.reporting.libraries.base.util.IOUtils;
 import org.pentaho.reporting.libraries.base.util.ObjectUtilities;
@@ -861,41 +865,74 @@ public class KettleDataSourceDialog extends CommonDialog
     return panel;
   }
 
-  public KettleDataFactory performCreateUnifiedDataFactory (final DataFactoryMetaData metaData,
-                                                            final String pluginId)
+  public KettleDataFactory performCreateUnifiedDataFactory (final DesignTimeContext context,
+                                                      final DataFactory input,
+                                                      final String queryName,
+                                                      final DataFactoryChangeRecorder changeRecorder, 
+                                                      final DataFactoryMetaData metaData,
+                                                      final String pluginId)
   {
-    JOptionPane.showConfirmDialog
-        (this, "Hello World?", "I wished I were a database...", JOptionPane.INFORMATION_MESSAGE);
+    UnifiedDatasourcePlugin udp = null;
+    try {
+      udp = new UnifiedDatasourcePlugin();
+      return (KettleDataFactory) udp.performEdit(context, (KettleDataFactory)input, queryName, changeRecorder);
+    } catch (ReportDataFactoryException e) {
 
-    // feel free to preload the KTR file and to configure the dialog state so that the
-    // mongo-db editor is visible.
+    }
+    
     return null;
   }
 
-  public KettleDataFactory performConfiguration(final KettleDataFactory dataFactory,
+  public KettleDataFactory performConfiguration(DesignTimeContext context, final KettleDataFactory dataFactory,
                                                 final String queryName)
   {
     queryListModel.clear();
 
     loadData(dataFactory, queryName);
-    if (performEdit() == false)
+    if ((dataFactory == null) || (!dataFactory.queriesAreHomogeneous()))
     {
-      return null;
-    }
+      if (performEdit() == false)
+      {
+        return null;
+      }
 
-    final KettleDataFactory kettleDataFactory = new KettleDataFactory();
-    for (int i = 0; i < queryListModel.getSize(); i++)
+      final KettleDataFactory kettleDataFactory = new KettleDataFactory();
+      for (int i = 0; i < queryListModel.getSize(); i++)
+      {
+        final KettleQueryEntry queryEntry = (KettleQueryEntry) queryListModel.getElementAt(i);
+        final KettleTransformationProducer producer = queryEntry.createProducer();
+        kettleDataFactory.setQuery(queryEntry.getName(), producer);
+      }
+
+      return kettleDataFactory;
+      
+    } else
     {
-      final KettleQueryEntry queryEntry = (KettleQueryEntry) queryListModel.getElementAt(i);
-      final KettleTransFromFileProducer producer = queryEntry.createProducer();
-      kettleDataFactory.setQuery(queryEntry.getName(), producer);
-    }
+      UnifiedDatasourcePlugin udp = null;
+      try {
+        udp = new UnifiedDatasourcePlugin();
+        return (KettleDataFactory) udp.performEdit(context, dataFactory, queryName, null);
+      } catch (ReportDataFactoryException e) {
 
-    return kettleDataFactory;
+      }
+    }
+    return null;
+  }
+  
+  public boolean performEdit(KettleDataFactory dataFactory, String queryName){
+    
+    if (!dataFactory.queriesAreHomogeneous()){
+      return performEdit();
+    }
+    
+    
+    
+    return true;
   }
 
   private void loadData(final KettleDataFactory dataFactory, final String selectedQueryName)
   {
+    
     if (dataFactory == null)
     {
       return;
@@ -907,7 +944,7 @@ public class KettleDataSourceDialog extends CommonDialog
     for (int i = 0; i < queryNames.length; i++)
     {
       final String queryName = queryNames[i];
-      final KettleTransFromFileProducer producer = (KettleTransFromFileProducer) dataFactory.getQuery(queryName);
+      final KettleTransformationProducer producer = (KettleTransformationProducer) dataFactory.getQuery(queryName);
 
       final KettleQueryEntry dataSet = new KettleQueryEntry(queryName);
       dataSet.setFile(producer.getTransformationFile());

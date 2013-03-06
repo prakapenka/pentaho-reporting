@@ -50,7 +50,7 @@ public class KettleDataSourcePlugin implements DataSourcePlugin
                                  final DataFactoryChangeRecorder changeRecorder)
   {
     final KettleDataSourceDialog editor = createKettleDataSourceDialog(context);
-     return editor.performConfiguration((KettleDataFactory) input, queryName);
+     return editor.performConfiguration(context, (KettleDataFactory) input, queryName);
   }
 
   protected KettleDataSourceDialog createKettleDataSourceDialog(final DesignTimeContext context)
