@@ -8,8 +8,13 @@ import org.pentaho.reporting.engine.classic.core.metadata.DefaultDataFactoryMeta
 
 public class EmbeddedKettleDataFactoryMetaData extends DefaultDataFactoryMetaData
 {
+  
+  public static final String DATA_RETRIEVAL_STEP = "output";
+  public static final String DATA_CONFIGURATION_STEP = "input";
+
   private String displayName;
   private String pluginId;
+  private byte[] embedded;
 
   /**
    * Create a new metadata object for the embedded datafactory.
@@ -19,7 +24,7 @@ public class EmbeddedKettleDataFactoryMetaData extends DefaultDataFactoryMetaDat
    * @param pluginId the plugin id might not be needed at all. Just see it as a placeholder in case you
    *                 want to pass more context information around. Remove it, if it is not needed at all.
    */
-  public EmbeddedKettleDataFactoryMetaData(final String name, final String displayName, final String pluginId)
+  public EmbeddedKettleDataFactoryMetaData(final String name, final String displayName, final String pluginId, byte[] embedded )
   {
     super(name, "org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleDataFactoryBundle",
         "",
@@ -36,6 +41,7 @@ public class EmbeddedKettleDataFactoryMetaData extends DefaultDataFactoryMetaDat
 
     this.displayName = displayName;
     this.pluginId = pluginId;
+    this.embedded = embedded;
   }
 
   public String getDisplayName(final Locale locale)
@@ -43,11 +49,20 @@ public class EmbeddedKettleDataFactoryMetaData extends DefaultDataFactoryMetaDat
     return displayName;
   }
 
+  public String getId()
+  {
+    return this.pluginId;
+  }
+
   public String getDescription(final Locale locale)
   {
     return displayName;
   }
 
+  public byte[] getBytes(){
+    return embedded;
+  }
+  
   public DataSourcePlugin createEditor()
   {
     final DataSourcePlugin editor = super.createEditor();
@@ -57,7 +72,7 @@ public class EmbeddedKettleDataFactoryMetaData extends DefaultDataFactoryMetaDat
     }
 
     final EmbeddedKettleDataFactoryEditor dataFactoryEditor = (EmbeddedKettleDataFactoryEditor) editor;
-    dataFactoryEditor.configure(getName(), pluginId);
+    dataFactoryEditor.configure(pluginId);
     return editor;
   }
 

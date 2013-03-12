@@ -4,5 +4,5 @@ import org.pentaho.reporting.engine.classic.core.designtime.DataSourcePlugin;
 
 public interface EmbeddedKettleDataFactoryEditor extends DataSourcePlugin
 {
-  public void configure(String metaDataId, String pluginType);
+  public void configure(String metaDataId);
 }

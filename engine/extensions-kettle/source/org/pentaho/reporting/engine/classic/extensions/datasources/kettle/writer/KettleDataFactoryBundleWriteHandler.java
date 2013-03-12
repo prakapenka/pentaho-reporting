@@ -212,7 +212,6 @@ public class KettleDataFactoryBundleWriteHandler implements BundleDataFactoryWri
     // the name is static for now
     coreAttrs.setAttribute(KettleDataFactoryModule.NAMESPACE, "name", queryName);
     coreAttrs.setAttribute(KettleDataFactoryModule.NAMESPACE, "plugin-id", fileProducer.getPluginId());
-    coreAttrs.setAttribute(KettleDataFactoryModule.NAMESPACE, "stepname", fileProducer.getStepName());
 
     final String[] definedArgumentNames = fileProducer.getDefinedArgumentNames();
     final ParameterMapping[] parameterMappings = fileProducer.getDefinedVariableNames();

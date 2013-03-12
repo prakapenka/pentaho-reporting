@@ -7,13 +7,10 @@ import org.apache.commons.logging.LogFactory;
 import org.pentaho.di.core.exception.KettleMissingPluginsException;
 import org.pentaho.di.core.exception.KettlePluginException;
 import org.pentaho.di.core.exception.KettleXMLException;
-import org.pentaho.di.core.plugins.DataFactoryPluginType;
-import org.pentaho.di.core.plugins.PluginInterface;
-import org.pentaho.di.core.plugins.PluginRegistry;
 import org.pentaho.di.core.xml.XMLHandler;
-import org.pentaho.di.datafactory.DynamicDatasource;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
+import org.pentaho.di.trans.step.StepDialogInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.ui.trans.step.BaseStepGenericXulDialog;
 import org.pentaho.reporting.engine.classic.core.DataFactory;
@@ -24,7 +21,8 @@ import org.pentaho.reporting.engine.classic.core.designtime.DataSourcePlugin;
 import org.pentaho.reporting.engine.classic.core.designtime.DesignTimeContext;
 import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryMetaData;
 import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryRegistry;
-import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.BigDataHelper;
+import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.DocumentHelper;
+import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.EmbeddedKettleDataFactoryMetaData;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.EmbeddedKettleTransformationProducer;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleDataFactory;
 import org.w3c.dom.Document;
@@ -34,49 +32,43 @@ public class UnifiedDatasourcePlugin implements DataSourcePlugin
 {
   private static final Log logger = LogFactory.getLog(UnifiedDatasourcePlugin.class);
   private String id;
+  
 
-  public UnifiedDatasourcePlugin() throws ReportDataFactoryException
+  public UnifiedDatasourcePlugin(String id) throws ReportDataFactoryException
   {
-    id = "MongoDB"; // TODO: Allow other datasources.
+    this.id = id; 
   }
-
-  private DynamicDatasource loadDataSource() throws KettlePluginException
-  {
-    // Load the main plugin class, as it holds all of the relevant details we need to realize this
-    // datasource
-    final PluginInterface plugin = PluginRegistry.getInstance().getPlugin(DataFactoryPluginType.class, id);
-    return (DynamicDatasource) PluginRegistry.getInstance().loadClass(plugin);
-  }
-
 
   public boolean canHandle(final DataFactory dataFactory)
   {
     return dataFactory instanceof KettleDataFactory;
   }
 
-  private TransMeta loadTransformation(final DynamicDatasource cls) throws KettlePluginException, KettleMissingPluginsException, KettleXMLException
+  private TransMeta loadTransformation() throws KettlePluginException, KettleMissingPluginsException, KettleXMLException
   {
-    final Document document = BigDataHelper.loadDocumentFromPlugin(cls);
+    final Document document = DocumentHelper.loadDocumentFromPlugin(id);
     final Node node = XMLHandler.getSubNode(document, TransMeta.XML_TAG);
     final TransMeta meta = new TransMeta();
     meta.loadXML(node, null, true, null, null);
     return meta;
   }
 
-  private BaseStepGenericXulDialog createDialog(final DynamicDatasource cls,
-                                                final StepMeta step,
+  private StepDialogInterface createDialog(final StepMeta step,
                                                 final DesignTimeContext context)
   {
     // Render datasource specific dialog for editing step details...
     try
     {
-      final Class<? extends BaseStepGenericXulDialog> dialog = (Class<? extends BaseStepGenericXulDialog>)
-          Class.forName(cls.getDialogClass(), true, cls.getClass().getClassLoader());
+      final String dlgClassName = step.getStepMetaInterface().getDialogClassName().replace("Dialog","XulDialog");
+      
+      final Class<StepDialogInterface> dialog = 
+          (Class<StepDialogInterface>) Class.forName(dlgClassName, true, step.getStepMetaInterface().getClass().getClassLoader());
 
-      final Constructor<? extends BaseStepGenericXulDialog> constructor =
+      final Constructor <StepDialogInterface> constructor =
           dialog.getDeclaredConstructor(Object.class, BaseStepMeta.class, TransMeta.class, String.class);
+      
       return constructor.newInstance(context.getParentWindow(), step.getStepMetaInterface(),
-          step.getParentTransMeta(), cls.getStepName());
+          step.getParentTransMeta(), EmbeddedKettleDataFactoryMetaData.DATA_CONFIGURATION_STEP);
 
     }
     catch (Exception e)
@@ -94,44 +86,46 @@ public class UnifiedDatasourcePlugin implements DataSourcePlugin
                                  DataFactoryChangeRecorder recorder)
   {
 
-    final KettleDataFactory KettleDataFactory = (KettleDataFactory) input;
+    final KettleDataFactory kettleDataFactory = (KettleDataFactory) input;
     try
     {
-      final DynamicDatasource cls = loadDataSource();
       TransMeta transMeta;
-      if (KettleDataFactory == null)
+      if (kettleDataFactory == null)
       {
-        transMeta = loadTransformation(cls);
+        transMeta = loadTransformation();
       }
       else
       {
-        final EmbeddedKettleTransformationProducer query = (EmbeddedKettleTransformationProducer) KettleDataFactory.getQuery("Mongo Query");
+        final EmbeddedKettleTransformationProducer query = 
+                      (EmbeddedKettleTransformationProducer) kettleDataFactory.getQuery(queryName);
         if (query == null)
         {
-          transMeta = loadTransformation(cls);
+          transMeta = loadTransformation();
         }
         else
         {
-          final Document document = BigDataHelper.loadDocumentFromBytes(query.getBigDataTransformationRaw());
+          final Document document = DocumentHelper.loadDocumentFromBytes(query.getBigDataTransformationRaw());
           final Node node = XMLHandler.getSubNode(document, TransMeta.XML_TAG);
           transMeta = new TransMeta();
           transMeta.loadXML(node, null, true, null, null);
         }
       }
 
-      final StepMeta step = transMeta.findStep(cls.getStepName());
+      final StepMeta step = transMeta.findStep(EmbeddedKettleDataFactoryMetaData.DATA_CONFIGURATION_STEP);
 
       // dialog OK button clicked ...
-      final BaseStepGenericXulDialog dlg = createDialog(cls, step, context);
+      final StepDialogInterface dlg = createDialog(step, context);
       if (dlg.open() != null)
       {
         transMeta.addOrReplaceStep(step);
         final byte[] rawData = transMeta.getXML().getBytes("UTF8");
         final KettleDataFactory retval = new KettleDataFactory();
-
-        // todo: No parameter definitions here!
-        retval.setQuery("Mongo Query",
-            new EmbeddedKettleTransformationProducer(new String[0], new ParameterMapping[0], id, cls.getStepName(), rawData));
+        retval.setMetadata(getMetaData());
+        
+        // TODO: No parameter definitions here!
+        retval.setQuery(queryName,
+            new EmbeddedKettleTransformationProducer(new String[0], new ParameterMapping[0], id, 
+                            EmbeddedKettleDataFactoryMetaData.DATA_CONFIGURATION_STEP, rawData));
         return retval;
       }
 
@@ -146,6 +140,6 @@ public class UnifiedDatasourcePlugin implements DataSourcePlugin
 
   public DataFactoryMetaData getMetaData()
   {
-    return DataFactoryRegistry.getInstance().getMetaData(KettleDataFactory.class.getName());
+    return DataFactoryRegistry.getInstance().getMetaData(id);
   }
 }

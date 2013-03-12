@@ -9,16 +9,16 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.pentaho.di.core.exception.KettlePluginException;
-import org.pentaho.di.datafactory.DynamicDatasource;
+import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryRegistry;
 import org.pentaho.reporting.libraries.xmlns.parser.LoggingErrorHandler;
 import org.pentaho.reporting.libraries.xmlns.parser.ParserEntityResolver;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-public class BigDataHelper
+public class DocumentHelper
 {
-  private BigDataHelper()
+  private DocumentHelper()
   {
   }
 
@@ -27,15 +27,14 @@ public class BigDataHelper
     return loadDocument(new ByteArrayInputStream(bytes));
   }
 
-  public static Document loadDocumentFromPlugin(final DynamicDatasource dynamicDataSource)
+  public static Document loadDocumentFromPlugin(String id)
       throws KettlePluginException
   {
-    // Load the main plugin class, as it holds all of the relevant details we need to realize this
-    // datasource
-    final InputStream in = dynamicDataSource.getClass().getResourceAsStream(dynamicDataSource.getTemplate());
+    
+    EmbeddedKettleDataFactoryMetaData md = (EmbeddedKettleDataFactoryMetaData)DataFactoryRegistry.getInstance().getMetaData(id);
+    final InputStream in = new ByteArrayInputStream(md.getBytes());
 
     return loadDocument(in);
-
   }
 
   public static Document loadDocument(final InputStream in) throws KettlePluginException

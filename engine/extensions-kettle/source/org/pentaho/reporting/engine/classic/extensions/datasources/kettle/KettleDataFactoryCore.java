@@ -7,6 +7,8 @@ import org.pentaho.reporting.engine.classic.core.metadata.DefaultDataFactoryCore
 
 public class KettleDataFactoryCore extends DefaultDataFactoryCore
 {
+  private static final long serialVersionUID = -8347624479657990545L;
+
   public KettleDataFactoryCore()
   {
   }
@@ -37,6 +39,11 @@ public class KettleDataFactoryCore extends DefaultDataFactoryCore
 
   public String getDisplayConnectionName(final DataFactoryMetaData metaData, final DataFactory dataFactory)
   {
-    return "I come from KettleDataFactoryCore. Change me!";
+    KettleDataFactory df = (KettleDataFactory) dataFactory;
+    if (df.getMetadata() != null)
+    {
+      return df.getMetadata().getDisplayName(null);
+    }
+    return metaData.getDisplayName(null);
   }
 }

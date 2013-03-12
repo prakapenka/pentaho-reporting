@@ -1,5 +1,6 @@
 package org.pentaho.reporting.engine.classic.extensions.datasources.kettle.parser;
 
+import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.EmbeddedKettleDataFactoryMetaData;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.EmbeddedKettleTransformationProducer;
 import org.pentaho.reporting.libraries.resourceloader.ResourceData;
 import org.pentaho.reporting.libraries.resourceloader.ResourceKey;
@@ -14,10 +15,10 @@ import org.xml.sax.SAXException;
 
 public class KettleEmbeddedTransReadHandler extends AbstractKettleTransformationProducerReadHandler
 {
+
   private String pluginId;
   private StringReadHandler resourceReadHandler;
   private String name;
-  private String stepName;
 
   public KettleEmbeddedTransReadHandler()
   {
@@ -28,7 +29,6 @@ public class KettleEmbeddedTransReadHandler extends AbstractKettleTransformation
     // note: We do not call super here
     pluginId = attrs.getValue(getUri(), "plugin-id");
     name = attrs.getValue(getUri(), "name");
-    stepName = attrs.getValue(getUri(), "stepname");
   }
 
 
@@ -68,8 +68,11 @@ public class KettleEmbeddedTransReadHandler extends AbstractKettleTransformation
       
     }
     
-    return new EmbeddedKettleTransformationProducer
-        (getDefinedArgumentNames(), getDefinedVariableNames(), pluginId, stepName, bytes);
+    return new EmbeddedKettleTransformationProducer(getDefinedArgumentNames(), 
+                                                    getDefinedVariableNames(), 
+                                                    pluginId, 
+                                                    EmbeddedKettleDataFactoryMetaData.DATA_RETRIEVAL_STEP, 
+                                                    bytes);
   }
 
   private byte[] loadDataFromBundle(final String href) throws ResourceKeyCreationException, ResourceLoadingException

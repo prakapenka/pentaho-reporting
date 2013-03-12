@@ -39,7 +39,6 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
@@ -67,6 +66,7 @@ import org.pentaho.reporting.engine.classic.core.designtime.datafactory.DataFact
 import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryMetaData;
 import org.pentaho.reporting.engine.classic.core.modules.gui.commonswing.ExceptionDialog;
 import org.pentaho.reporting.engine.classic.core.util.ReportParameterValues;
+import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.EmbeddedKettleDataFactoryMetaData;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleDataFactory;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleTransFromFileProducer;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleTransformationProducer;
@@ -869,13 +869,16 @@ public class KettleDataSourceDialog extends CommonDialog
                                                       final DataFactory input,
                                                       final String queryName,
                                                       final DataFactoryChangeRecorder changeRecorder, 
-                                                      final DataFactoryMetaData metaData,
-                                                      final String pluginId)
+                                                      final DataFactoryMetaData metaData)
   {
     UnifiedDatasourcePlugin udp = null;
     try {
-      udp = new UnifiedDatasourcePlugin();
-      return (KettleDataFactory) udp.performEdit(context, (KettleDataFactory)input, queryName, changeRecorder);
+      udp = new UnifiedDatasourcePlugin(((EmbeddedKettleDataFactoryMetaData)metaData).getId());
+      
+      KettleDataFactory df = (KettleDataFactory) udp.performEdit(context, (KettleDataFactory)input, queryName, changeRecorder);
+      df.setMetadata(metaData);
+      return df;
+      
     } catch (ReportDataFactoryException e) {
 
     }
@@ -910,7 +913,8 @@ public class KettleDataSourceDialog extends CommonDialog
     {
       UnifiedDatasourcePlugin udp = null;
       try {
-        udp = new UnifiedDatasourcePlugin();
+        EmbeddedKettleDataFactoryMetaData md = (EmbeddedKettleDataFactoryMetaData) dataFactory.getMetadata();
+        udp = new UnifiedDatasourcePlugin(md.getId());
         return (KettleDataFactory) udp.performEdit(context, dataFactory, queryName, null);
       } catch (ReportDataFactoryException e) {
 
@@ -924,9 +928,6 @@ public class KettleDataSourceDialog extends CommonDialog
     if (!dataFactory.queriesAreHomogeneous()){
       return performEdit();
     }
-    
-    
-    
     return true;
   }
 

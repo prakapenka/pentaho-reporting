@@ -26,9 +26,11 @@ import org.w3c.dom.Node;
 
 public class EmbeddedKettleTransformationProducer extends AbstractKettleTransformationProducer
 {
+  private static final long serialVersionUID = 1900310938438244134L;
+  
   private static final Log logger = LogFactory.getLog(EmbeddedKettleTransformationProducer.class);
+  
   private String pluginId;
-  private transient DynamicDatasource dynamicDataSource;
   private byte[] bigDataTransformationRaw;
 
   public EmbeddedKettleTransformationProducer(final String[] definedArgumentNames,
@@ -43,42 +45,9 @@ public class EmbeddedKettleTransformationProducer extends AbstractKettleTransfor
     this.bigDataTransformationRaw = bigDataTransformationRaw.clone();
   }
 
-  private DynamicDatasource getDynamicDataSource() throws KettlePluginException
-  {
-    if (dynamicDataSource != null)
-    {
-      return dynamicDataSource;
-    }
-
-    final PluginInterface plugin = PluginRegistry.getInstance().getPlugin(DataFactoryPluginType.class, pluginId);
-    if (plugin == null)
-    {
-      final List<PluginInterface> plugins = PluginRegistry.getInstance().getPlugins(DataFactoryPluginType.class);
-      throw new KettlePluginException("A plugin with id '" + pluginId + "' does not exist: " + plugins);
-    }
-    dynamicDataSource = (DynamicDatasource) PluginRegistry.getInstance().loadClass(plugin);
-    if (dynamicDataSource == null)
-    {
-      throw new KettlePluginException();
-    }
-    return dynamicDataSource;
-  }
-
   public String getPluginId()
   {
     return pluginId;
-  }
-
-  public String getStepName()
-  {
-    try
-    {
-      return getDynamicDataSource().getStepName();
-    }
-    catch (KettlePluginException e)
-    {
-      throw new IllegalStateException(e);
-    }
   }
 
   public byte[] getBigDataTransformationRaw()
@@ -105,7 +74,7 @@ public class EmbeddedKettleTransformationProducer extends AbstractKettleTransfor
 
   private TransMeta loadTransformation(final ResourceKey contextKey) throws KettleMissingPluginsException, KettlePluginException, KettleXMLException
   {
-    final Document document = BigDataHelper.loadDocumentFromBytes(getBigDataTransformationRaw());
+    final Document document = DocumentHelper.loadDocumentFromBytes(getBigDataTransformationRaw());
     final Node node = XMLHandler.getSubNode(document, TransMeta.XML_TAG);
     final TransMeta meta = new TransMeta();
     meta.loadXML(node, null, true, null, null);
@@ -151,7 +120,6 @@ public class EmbeddedKettleTransformationProducer extends AbstractKettleTransfor
 
   @Override
   public String getTransformationFile() {
-    // TODO Auto-generated method stub
     return null;
   }
 

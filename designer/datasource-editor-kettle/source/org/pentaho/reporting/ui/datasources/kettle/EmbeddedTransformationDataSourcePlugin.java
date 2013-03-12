@@ -10,16 +10,14 @@ import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.Embedd
 public class EmbeddedTransformationDataSourcePlugin extends KettleDataSourcePlugin implements EmbeddedKettleDataFactoryEditor
 {
   private String metaDataId;
-  private String pluginType;
 
   public EmbeddedTransformationDataSourcePlugin()
   {
   }
 
-  public void configure(final String metaDataId, final String pluginType)
+  public void configure(final String metaDataId)
   {
     this.metaDataId = metaDataId;
-    this.pluginType = pluginType;
   }
 
   public DataFactory performEdit(final DesignTimeContext context,
@@ -33,8 +31,8 @@ public class EmbeddedTransformationDataSourcePlugin extends KettleDataSourcePlug
     }
     // we are asked to create a new data-factory.
     final KettleDataSourceDialog kettleDataSourceDialog = createKettleDataSourceDialog(context);
-    return kettleDataSourceDialog.performCreateUnifiedDataFactory(context, input, selectedQueryName, 
-                                                                  changeRecorder, getMetaData(), pluginType);
+    return kettleDataSourceDialog.performCreateUnifiedDataFactory(context, input, "Query1", 
+                                                                  changeRecorder, getMetaData());
   }
 
   public DataFactoryMetaData getMetaData()

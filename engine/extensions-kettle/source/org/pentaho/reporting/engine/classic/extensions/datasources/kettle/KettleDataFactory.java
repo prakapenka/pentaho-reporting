@@ -19,12 +19,15 @@ package org.pentaho.reporting.engine.classic.extensions.datasources.kettle;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+
 import javax.swing.table.TableModel;
 
 import org.pentaho.reporting.engine.classic.core.AbstractDataFactory;
 import org.pentaho.reporting.engine.classic.core.DataFactory;
 import org.pentaho.reporting.engine.classic.core.DataRow;
 import org.pentaho.reporting.engine.classic.core.ReportDataFactoryException;
+import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryMetaData;
+import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryRegistry;
 
 /**
  * Fires a Kettle-Query by executing a Kettle-Transformation.
@@ -33,8 +36,21 @@ import org.pentaho.reporting.engine.classic.core.ReportDataFactoryException;
  */
 public class KettleDataFactory extends AbstractDataFactory
 {
+  private static final long serialVersionUID = -7382213563334792010L;
+
   private LinkedHashMap<String, KettleTransformationProducer> queries;
   private transient KettleTransformationProducer currentlyRunningQuery;
+  
+  /** 
+   * This attribute will only have a value when the KettleDataFactory is 
+   * serving an embedded unified datasource, versus the typical 
+   * Kettle transformation datasource. 
+   */
+  private DataFactoryMetaData metadata;
+
+  public void setMetadata(DataFactoryMetaData metadata) {
+    this.metadata = metadata;
+  }
 
   public KettleDataFactory()
   {
@@ -201,4 +217,27 @@ public class KettleDataFactory extends AbstractDataFactory
     }
     return true;
   }
+  
+  public DataFactoryMetaData getMetadata() {
+    
+    if (metadata != null)
+    {
+      return metadata;
+    }
+    
+    if (!queries.isEmpty())
+    {
+      // First query is acceptable; if the queries are "mixed", we are not using this metadata anyway
+      KettleTransformationProducer defaultProducer = queries.values().iterator().next();
+      if (defaultProducer instanceof EmbeddedKettleTransformationProducer)
+      {
+        EmbeddedKettleTransformationProducer producer = (EmbeddedKettleTransformationProducer)defaultProducer;
+        metadata = DataFactoryRegistry.getInstance().getMetaData(producer.getPluginId());
+        return metadata;
+      }
+      
+    }
+    return DataFactoryRegistry.getInstance().getMetaData(this.getClass().getName());
+  }
+
 }
