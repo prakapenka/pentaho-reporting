@@ -36,6 +36,7 @@ import sun.misc.IOUtils;
  */
 public class TransformationDatasourceMetadata
 {
+  private static final String DATASOURCE_DIRECTORY = "datasources";
 
   private static class DirectoryFileFilter implements FileFilter
   {
@@ -66,7 +67,7 @@ public class TransformationDatasourceMetadata
       final ResourceManager resourceManager = new ResourceManager();
       resourceManager.registerDefaults();
 
-      URL templateLocation = TransformationDatasourceMetadata.class.getClassLoader().getResource("datasources");
+      URL templateLocation = TransformationDatasourceMetadata.class.getClassLoader().getResource(DATASOURCE_DIRECTORY);
       if (templateLocation != null){
         final File templateDir = new File(templateLocation.toURI());
         if (templateDir.exists() && templateDir.isDirectory())
@@ -111,9 +112,13 @@ public class TransformationDatasourceMetadata
         // TODO: the plugin ID should be preserved even if the template name changes.. not the case today.
         
         byte[] b = IOUtils.readFully(new FileInputStream(f), -1, true);
+        
+        String possiblePluginId = f.getAbsolutePath().substring(
+                                  f.getAbsolutePath().indexOf(DATASOURCE_DIRECTORY), 
+                                  f.getAbsolutePath().length());
+        
         DataFactoryRegistry.getInstance().register(
-            new EmbeddedKettleDataFactoryMetaData(f.getCanonicalPath(), f.getName().replace(".ktr", ""), 
-                f.getAbsolutePath(), b));
+            new EmbeddedKettleDataFactoryMetaData(possiblePluginId, f.getName().replace(".ktr", ""), b));
 
         if (logger.isDebugEnabled())
         {

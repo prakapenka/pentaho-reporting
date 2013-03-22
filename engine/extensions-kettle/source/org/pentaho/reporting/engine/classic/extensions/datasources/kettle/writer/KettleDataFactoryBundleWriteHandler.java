@@ -259,7 +259,7 @@ public class KettleDataFactoryBundleWriteHandler implements BundleDataFactoryWri
     try{
 
       outputStream = bundle.createEntry("datasources/".concat(fileName), "text/xml");
-      outputStream.write(fileProducer.getBigDataTransformationRaw());
+      outputStream.write(fileProducer.getTransformationRaw());
       
 
     }finally{

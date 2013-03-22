@@ -26,6 +26,7 @@ import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.reporting.engine.classic.core.ParameterMapping;
 import org.pentaho.reporting.engine.classic.core.ReportDataFactoryException;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleTransFromFileProducer;
+import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleTransformationProducer;
 import org.pentaho.reporting.libraries.resourceloader.ResourceKey;
 import org.pentaho.reporting.libraries.resourceloader.ResourceManager;
 
@@ -52,7 +53,7 @@ public class KettleQueryEntry
   private String selectedStepName;
   private String[] arguments;
   private ParameterMapping[] parameters;
-  private String[] declaredParameters;
+  protected String[] declaredParameters;
 
   public KettleQueryEntry(final String aName)
   {
@@ -132,7 +133,7 @@ public class KettleQueryEntry
     return declaredParameters;
   }
 
-  private void loadTransformation(final ResourceManager resourceManager, final ResourceKey contextKey)
+  protected void loadTransformation(final ResourceManager resourceManager, final ResourceKey contextKey)
       throws ReportDataFactoryException, KettleException
   {
     final InternalKettleTransFromFileProducer transFromFileProducer =
@@ -157,7 +158,7 @@ public class KettleQueryEntry
     return cached;
   }
 
-  public KettleTransFromFileProducer createProducer()
+  public KettleTransformationProducer createProducer()
   {
     final String[] argumentFields = getArguments();
     final ParameterMapping[] varNames = getParameters();

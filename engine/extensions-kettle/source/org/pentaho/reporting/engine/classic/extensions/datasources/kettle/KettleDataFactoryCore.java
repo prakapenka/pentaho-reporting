@@ -1,5 +1,7 @@
 package org.pentaho.reporting.engine.classic.extensions.datasources.kettle;
 
+import java.util.Locale;
+
 import org.pentaho.reporting.engine.classic.core.DataFactory;
 import org.pentaho.reporting.engine.classic.core.DataRow;
 import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryMetaData;
@@ -42,8 +44,9 @@ public class KettleDataFactoryCore extends DefaultDataFactoryCore
     KettleDataFactory df = (KettleDataFactory) dataFactory;
     if (df.getMetadata() != null)
     {
-      return df.getMetadata().getDisplayName(null);
+      return df.getMetadata().getDisplayName(Locale.getDefault());
     }
-    return metaData.getDisplayName(null);
+    return metaData.getDisplayName(Locale.getDefault());
+    
   }
 }

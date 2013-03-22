@@ -23,7 +23,10 @@ import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.net.URL;
 import java.util.HashSet;
@@ -66,9 +69,7 @@ import org.pentaho.reporting.engine.classic.core.designtime.datafactory.DataFact
 import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryMetaData;
 import org.pentaho.reporting.engine.classic.core.modules.gui.commonswing.ExceptionDialog;
 import org.pentaho.reporting.engine.classic.core.util.ReportParameterValues;
-import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.EmbeddedKettleDataFactoryMetaData;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleDataFactory;
-import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleTransFromFileProducer;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleTransformationProducer;
 import org.pentaho.reporting.libraries.base.util.FilesystemFilter;
 import org.pentaho.reporting.libraries.base.util.IOUtils;
@@ -208,7 +209,6 @@ public class KettleDataSourceDialog extends CommonDialog
     }
   }
 
-
   private class FileSyncHandler implements DocumentListener, Runnable
   {
     private boolean armed;
@@ -345,9 +345,9 @@ public class KettleDataSourceDialog extends CommonDialog
     }
   }
 
-  private class QueryNameListSelectionListener implements ListSelectionListener
+  protected class QueryNameListSelectionListener implements ListSelectionListener
   {
-    private QueryNameListSelectionListener()
+    protected QueryNameListSelectionListener()
     {
     }
 
@@ -464,7 +464,7 @@ public class KettleDataSourceDialog extends CommonDialog
         }
       }
 
-      final KettleQueryEntry newQuery = new KettleQueryEntry(queryName);
+      final KettleQueryEntry newQuery = getQueryEntry(queryName, null);
       queryListModel.addElement(newQuery);
       queryNameList.setSelectedValue(newQuery, true);
     }
@@ -531,7 +531,7 @@ public class KettleDataSourceDialog extends CommonDialog
     public void actionPerformed(final ActionEvent e)
     {
       final KettleQueryEntry kettleQueryEntry = (KettleQueryEntry) queryNameList.getSelectedValue();
-      final KettleTransFromFileProducer fileProducer = kettleQueryEntry.createProducer();
+      final KettleTransformationProducer fileProducer = kettleQueryEntry.createProducer();
       final KettleDataFactory dataFactory = new KettleDataFactory();
       dataFactory.setQuery(kettleQueryEntry.getName(), fileProducer);
 
@@ -701,14 +701,15 @@ public class KettleDataSourceDialog extends CommonDialog
 
   private static final Log logger = LogFactory.getLog(KettleDataSourceDialog.class);
 
-  private DesignTimeContext designTimeContext;
+  protected DesignTimeContext designTimeContext;
   private JTextField fileTextField;
-  private JTextField nameTextField;
+  protected JTextField nameTextField;
   private JList stepsList;
-  private JList queryNameList;
-  private DefaultListModel queryListModel;
-  private boolean inUpdateFromList;
-  private Action editParameterAction;
+  protected JList queryNameList;
+  protected DefaultListModel queryListModel;
+  protected boolean inUpdateFromList;
+  protected Action editParameterAction;
+  protected Action previewAction;
 
   public KettleDataSourceDialog(final DesignTimeContext designTimeContext, final JDialog parent)
   {
@@ -745,7 +746,7 @@ public class KettleDataSourceDialog extends CommonDialog
     queryNameList = new JList(queryListModel);
     queryNameList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     queryNameList.setVisibleRowCount(5);
-    queryNameList.addListSelectionListener(new QueryNameListSelectionListener());
+    queryNameList.addListSelectionListener(getQueryNameListener());
 
     fileTextField = new JTextField(30);
     fileTextField.setEnabled(false);
@@ -758,7 +759,6 @@ public class KettleDataSourceDialog extends CommonDialog
     nameTextField = new JTextField(30);
     nameTextField.setEnabled(false);
     nameTextField.getDocument().addDocumentListener(new NameSyncHandler());
-
 
     setTitle(Messages.getString("KettleDataSourceDialog.Title"));
     setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -774,11 +774,9 @@ public class KettleDataSourceDialog extends CommonDialog
 
   protected Component createContentPane()
   {
-    final PreviewAction previewAction = new PreviewAction();
-    stepsList.addListSelectionListener(previewAction);
-
-    final BrowseAction browseAction = new BrowseAction();
-    queryNameList.addListSelectionListener(browseAction);
+    previewAction = new PreviewAction();
+   
+    stepsList.addListSelectionListener((PreviewAction)previewAction);
 
     final RemoveQueryAction removeQueryAction = new RemoveQueryAction();
     queryNameList.addListSelectionListener(removeQueryAction);
@@ -814,41 +812,13 @@ public class KettleDataSourceDialog extends CommonDialog
 
     gbc = new GridBagConstraints();
     gbc.gridx = 0;
-    gbc.gridy = 1;
-    gbc.anchor = GridBagConstraints.WEST;
-    gbc.insets = new Insets(0, 0, 0, 13);
-    mainPanel.add(new JLabel(Messages.getString("KettleDataSourceDialog.FileName")), gbc);
-
-    gbc = new GridBagConstraints();
-    gbc.gridx = 1;
-    gbc.gridy = 1;
-    gbc.anchor = GridBagConstraints.WEST;
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.weightx = 1;
-    mainPanel.add(fileTextField, gbc);
-
-    gbc = new GridBagConstraints();
-    gbc.gridx = 2;
-    gbc.gridy = 1;
-    gbc.anchor = GridBagConstraints.WEST;
-    mainPanel.add(new JButton(browseAction), gbc);
-
-    gbc = new GridBagConstraints();
-    gbc.gridx = 0;
-    gbc.gridy = 2;
-    gbc.anchor = GridBagConstraints.WEST;
-    gbc.insets = new Insets(0, 0, 5, 0);
-    mainPanel.add(new JLabel(Messages.getString("KettleDataSourceDialog.Steps")), gbc);
-
-    gbc = new GridBagConstraints();
-    gbc.gridx = 0;
     gbc.gridy = 3;
     gbc.gridwidth = 3;
     gbc.fill = GridBagConstraints.BOTH;
     gbc.weightx = 1;
     gbc.weighty = 1;
     gbc.anchor = GridBagConstraints.WEST;
-    mainPanel.add(new JScrollPane(stepsList), gbc);
+    mainPanel.add(createDatasourcePanel(), gbc);
 
     gbc = new GridBagConstraints();
     gbc.gridx = 0;
@@ -864,26 +834,68 @@ public class KettleDataSourceDialog extends CommonDialog
     panel.add(queryListPanel, BorderLayout.CENTER);
     return panel;
   }
+  
+  protected JPanel createDatasourcePanel(){
+    JPanel panel = new JPanel(new GridBagLayout());
+    
+    final BrowseAction browseAction = new BrowseAction();
+    queryNameList.addListSelectionListener(browseAction);
+
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.gridx = 0;
+    gbc.gridy = 1;
+    gbc.anchor = GridBagConstraints.WEST;
+    gbc.insets = new Insets(0, 0, 0, 13);
+    panel.add(new JLabel(Messages.getString("KettleDataSourceDialog.FileName")), gbc);
+
+    gbc = new GridBagConstraints();
+    gbc.gridx = 1;
+    gbc.gridy = 1;
+    gbc.anchor = GridBagConstraints.WEST;
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.weightx = 1;
+    panel.add(fileTextField, gbc);
+
+    gbc = new GridBagConstraints();
+    gbc.gridx = 2;
+    gbc.gridy = 1;
+    gbc.anchor = GridBagConstraints.WEST;
+    panel.add(new JButton(browseAction), gbc);
+
+    gbc = new GridBagConstraints();
+    gbc.gridx = 0;
+    gbc.gridy = 2;
+    gbc.anchor = GridBagConstraints.WEST;
+    gbc.insets = new Insets(0, 0, 5, 0);
+    panel.add(new JLabel(Messages.getString("KettleDataSourceDialog.Steps")), gbc);
+
+    gbc = new GridBagConstraints();
+    gbc.gridx = 0;
+    gbc.gridy = 3;
+    gbc.gridwidth = 3;
+    gbc.fill = GridBagConstraints.BOTH;
+    gbc.weightx = 1;
+    gbc.weighty = 1;
+    gbc.anchor = GridBagConstraints.WEST;
+    panel.add(new JScrollPane(stepsList), gbc);
+    
+    return panel;
+
+  }
 
   public KettleDataFactory performCreateUnifiedDataFactory (final DesignTimeContext context,
-                                                      final DataFactory input,
+                                                      final DataFactory dataFactory,
                                                       final String queryName,
                                                       final DataFactoryChangeRecorder changeRecorder, 
                                                       final DataFactoryMetaData metaData)
   {
-    UnifiedDatasourcePlugin udp = null;
-    try {
-      udp = new UnifiedDatasourcePlugin(((EmbeddedKettleDataFactoryMetaData)metaData).getId());
       
-      KettleDataFactory df = (KettleDataFactory) udp.performEdit(context, (KettleDataFactory)input, queryName, changeRecorder);
-      df.setMetadata(metaData);
-      return df;
-      
-    } catch (ReportDataFactoryException e) {
+    KettleDataFactory factory = (dataFactory == null) ? new KettleDataFactory() : (KettleDataFactory)dataFactory;
+    factory.setMetadata(metaData);
 
-    }
-    
-    return null;
+    KettleDataSourceDialog dialog = createEmbeddedKettleDataSourceDialog(context, metaData.getName());
+    return dialog.performConfiguration(context, factory, queryName);
+      
   }
 
   public KettleDataFactory performConfiguration(DesignTimeContext context, final KettleDataFactory dataFactory,
@@ -894,11 +906,12 @@ public class KettleDataSourceDialog extends CommonDialog
     loadData(dataFactory, queryName);
     if ((dataFactory == null) || (!dataFactory.queriesAreHomogeneous()))
     {
+      
       if (performEdit() == false)
       {
         return null;
       }
-
+      
       final KettleDataFactory kettleDataFactory = new KettleDataFactory();
       for (int i = 0; i < queryListModel.getSize(); i++)
       {
@@ -908,30 +921,17 @@ public class KettleDataSourceDialog extends CommonDialog
       }
 
       return kettleDataFactory;
-      
+
     } else
     {
-      UnifiedDatasourcePlugin udp = null;
-      try {
-        EmbeddedKettleDataFactoryMetaData md = (EmbeddedKettleDataFactoryMetaData) dataFactory.getMetadata();
-        udp = new UnifiedDatasourcePlugin(md.getId());
-        return (KettleDataFactory) udp.performEdit(context, dataFactory, queryName, null);
-      } catch (ReportDataFactoryException e) {
 
-      }
+      KettleDataSourceDialog dialog = createEmbeddedKettleDataSourceDialog(context, dataFactory.getMetadata().getName());
+      return dialog.performConfiguration(context, dataFactory, queryName);
+      
     }
-    return null;
   }
   
-  public boolean performEdit(KettleDataFactory dataFactory, String queryName){
-    
-    if (!dataFactory.queriesAreHomogeneous()){
-      return performEdit();
-    }
-    return true;
-  }
-
-  private void loadData(final KettleDataFactory dataFactory, final String selectedQueryName)
+  protected void loadData(final KettleDataFactory dataFactory, final String selectedQueryName)
   {
     
     if (dataFactory == null)
@@ -947,7 +947,7 @@ public class KettleDataSourceDialog extends CommonDialog
       final String queryName = queryNames[i];
       final KettleTransformationProducer producer = (KettleTransformationProducer) dataFactory.getQuery(queryName);
 
-      final KettleQueryEntry dataSet = new KettleQueryEntry(queryName);
+      final KettleQueryEntry dataSet = getQueryEntry(queryName, producer);
       dataSet.setFile(producer.getTransformationFile());
       dataSet.setSelectedStep(producer.getStepName());
       dataSet.setArguments(producer.getDefinedArgumentNames());
@@ -967,4 +967,34 @@ public class KettleDataSourceDialog extends CommonDialog
     getConfirmAction().setEnabled(queryNameList.getModel().getSize() > 0);
     return super.validateInputs(onConfirm);
   }
+  
+  protected KettleQueryEntry getQueryEntry(String queryName, KettleTransformationProducer producer)
+  {
+      return new KettleQueryEntry(queryName);
+  }
+  
+  protected KettleDataSourceDialog createEmbeddedKettleDataSourceDialog(final DesignTimeContext context, String id)
+  {
+    final KettleDataSourceDialog editor;
+    final Window window = context.getParentWindow();
+    if (window instanceof JDialog)
+    {
+      editor = new EmbeddedKettleDataSourceDialog(context, (JDialog) window, id);
+    }
+    else if (window instanceof JFrame)
+    {
+      editor = new EmbeddedKettleDataSourceDialog(context, (JFrame) window, id);
+    }
+    else
+    {
+      editor = new EmbeddedKettleDataSourceDialog(context, id);
+    }
+    return editor;
+  }
+
+  protected ListSelectionListener getQueryNameListener()
+  {
+    return new QueryNameListSelectionListener();
+  }
+
 }

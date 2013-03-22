@@ -17,42 +17,50 @@ import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.datafactory.DynamicDatasource;
 import org.pentaho.di.repository.Repository;
 import org.pentaho.di.trans.TransMeta;
+import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.reporting.engine.classic.core.ParameterMapping;
 import org.pentaho.reporting.engine.classic.core.ReportDataFactoryException;
+import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryRegistry;
 import org.pentaho.reporting.libraries.resourceloader.ResourceKey;
 import org.pentaho.reporting.libraries.resourceloader.ResourceManager;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-public class EmbeddedKettleTransformationProducer extends AbstractKettleTransformationProducer
-{
+public class EmbeddedKettleTransformationProducer extends AbstractKettleTransformationProducer {
   private static final long serialVersionUID = 1900310938438244134L;
-  
+
   private static final Log logger = LogFactory.getLog(EmbeddedKettleTransformationProducer.class);
-  
+
   private String pluginId;
-  private byte[] bigDataTransformationRaw;
+
+  private byte[] rawBytes;
 
   public EmbeddedKettleTransformationProducer(final String[] definedArgumentNames,
-                                            final ParameterMapping[] definedVariableNames,
-                                            final String pluginId,
-                                            final String stepName,
-                                            final byte[] bigDataTransformationRaw)
-  {
+      final ParameterMapping[] definedVariableNames, final String pluginId, final String stepName,
+      final byte[] transformationRaw) {
     super("", stepName, null, null, definedArgumentNames, definedVariableNames);
 
     this.pluginId = pluginId;
-    this.bigDataTransformationRaw = bigDataTransformationRaw.clone();
+    if (transformationRaw == null) {
+      EmbeddedKettleDataFactoryMetaData md = (EmbeddedKettleDataFactoryMetaData) DataFactoryRegistry.getInstance()
+          .getMetaData(pluginId);
+      rawBytes = md.getBytes().clone();
+    } else {
+      rawBytes = transformationRaw.clone();
+    }
   }
 
-  public String getPluginId()
-  {
+  public String getPluginId() {
     return pluginId;
   }
 
-  public byte[] getBigDataTransformationRaw()
+  public byte[] getTransformationRaw() {
+    return rawBytes.clone();
+  }
+  
+  public void setTransformationRaw(byte[] raw)
   {
-    return bigDataTransformationRaw.clone();
+    rawBytes = raw;
   }
 
   /**
@@ -60,40 +68,33 @@ public class EmbeddedKettleTransformationProducer extends AbstractKettleTransfor
    *
    * @return
    */
-  public TransMeta getTransMeta() throws KettlePluginException, KettleMissingPluginsException, KettleXMLException
-  {
+  public TransMeta getTransMeta() throws KettlePluginException, KettleMissingPluginsException, KettleXMLException {
     return loadTransformation(null);
   }
 
-  protected TransMeta loadTransformation(final Repository repository,
-                                         final ResourceManager resourceManager,
-                                         final ResourceKey contextKey) throws ReportDataFactoryException, KettleException
-  {
+  protected TransMeta loadTransformation(final Repository repository, final ResourceManager resourceManager,
+      final ResourceKey contextKey) throws ReportDataFactoryException, KettleException {
     return loadTransformation(contextKey);
   }
 
-  private TransMeta loadTransformation(final ResourceKey contextKey) throws KettleMissingPluginsException, KettlePluginException, KettleXMLException
-  {
-    final Document document = DocumentHelper.loadDocumentFromBytes(getBigDataTransformationRaw());
+  public TransMeta loadTransformation(final ResourceKey contextKey) throws KettleMissingPluginsException,
+      KettlePluginException, KettleXMLException {
+    final Document document = DocumentHelper.loadDocumentFromBytes(getTransformationRaw());
     final Node node = XMLHandler.getSubNode(document, TransMeta.XML_TAG);
     final TransMeta meta = new TransMeta();
     meta.loadXML(node, null, true, null, null);
     final String filename = computeFullFilename(contextKey);
-    if (filename != null)
-    {
+    if (filename != null) {
       logger.debug("Computed Transformation Location: " + filename);
       meta.setFilename(filename);
     }
     return meta;
   }
 
-  protected String computeFullFilename(ResourceKey key)
-  {
-    while (key != null)
-    {
+  protected String computeFullFilename(ResourceKey key) {
+    while (key != null) {
       final Object identifier = key.getIdentifier();
-      if (identifier instanceof File)
-      {
+      if (identifier instanceof File) {
         final File file = (File) identifier;
         return file.getAbsolutePath();
       }
@@ -102,17 +103,13 @@ public class EmbeddedKettleTransformationProducer extends AbstractKettleTransfor
     return null;
   }
 
-  public Object getQueryHash(final ResourceManager resourceManager, final ResourceKey resourceKey)
-  {
+  public Object getQueryHash(final ResourceManager resourceManager, final ResourceKey resourceKey) {
     final ArrayList<Object> retval = internalGetQueryHash();
     retval.add(pluginId);
-    try
-    {
+    try {
       final TransMeta meta = loadTransformation(null, resourceManager, resourceKey);
       retval.add(meta.hashCode());
-    }
-    catch (Exception e)
-    {
+    } catch (Exception e) {
       // if it fails, move along with original query hash ...
     }
     return retval;
@@ -122,6 +119,5 @@ public class EmbeddedKettleTransformationProducer extends AbstractKettleTransfor
   public String getTransformationFile() {
     return null;
   }
-
 
 }

@@ -1,9 +1,14 @@
 package org.pentaho.reporting.ui.datasources.kettle;
 
+import java.beans.PropertyChangeListener;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Constructor;
+
+import javax.swing.JPanel;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleMissingPluginsException;
 import org.pentaho.di.core.exception.KettlePluginException;
 import org.pentaho.di.core.exception.KettleXMLException;
@@ -13,11 +18,6 @@ import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.ui.trans.step.BaseStepGenericXulDialog;
-import org.pentaho.reporting.engine.classic.core.DataFactory;
-import org.pentaho.reporting.engine.classic.core.ParameterMapping;
-import org.pentaho.reporting.engine.classic.core.ReportDataFactoryException;
-import org.pentaho.reporting.engine.classic.core.designtime.DataFactoryChangeRecorder;
-import org.pentaho.reporting.engine.classic.core.designtime.DataSourcePlugin;
 import org.pentaho.reporting.engine.classic.core.designtime.DesignTimeContext;
 import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryMetaData;
 import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryRegistry;
@@ -25,32 +25,21 @@ import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.Docume
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.EmbeddedKettleDataFactoryMetaData;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.EmbeddedKettleTransformationProducer;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleDataFactory;
+import org.pentaho.ui.xul.containers.XulVbox;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-public class UnifiedDatasourcePlugin implements DataSourcePlugin
+public class EmbeddedHelper
 {
-  private static final Log logger = LogFactory.getLog(UnifiedDatasourcePlugin.class);
+  private static final Log logger = LogFactory.getLog(EmbeddedHelper.class);
   private String id;
-  
+  private TransMeta cachedMeta;
+  private StepMeta step;
+  private BaseStepGenericXulDialog dialog;
 
-  public UnifiedDatasourcePlugin(String id) throws ReportDataFactoryException
+  public EmbeddedHelper(String id) 
   {
     this.id = id; 
-  }
-
-  public boolean canHandle(final DataFactory dataFactory)
-  {
-    return dataFactory instanceof KettleDataFactory;
-  }
-
-  private TransMeta loadTransformation() throws KettlePluginException, KettleMissingPluginsException, KettleXMLException
-  {
-    final Document document = DocumentHelper.loadDocumentFromPlugin(id);
-    final Node node = XMLHandler.getSubNode(document, TransMeta.XML_TAG);
-    final TransMeta meta = new TransMeta();
-    meta.loadXML(node, null, true, null, null);
-    return meta;
   }
 
   private StepDialogInterface createDialog(final StepMeta step,
@@ -79,65 +68,114 @@ public class UnifiedDatasourcePlugin implements DataSourcePlugin
 
     }
   }
-
-  public DataFactory performEdit(final DesignTimeContext context,
-                                 final DataFactory input,
-                                 final String queryName,
-                                 DataFactoryChangeRecorder recorder)
+  
+  public JPanel getDialogPanel(final StepMeta step, final DesignTimeContext context, PropertyChangeListener l)
   {
+    dialog = (BaseStepGenericXulDialog) createDialog(step, context);
+    if (l != null)
+    {
+      dialog.addPropertyChangeListener(l);
+    }
+    XulVbox root = (XulVbox) dialog.getXulDomContainer().getDocumentRoot().getElementById("root");
+    JPanel panel = (JPanel)root.getManagedObject();
+    return panel;
+  }
 
-    final KettleDataFactory kettleDataFactory = (KettleDataFactory) input;
+  /**
+   * TODO: Currently not used! Check back and delete after code is stable.
+   * 
+   * @param factory
+   * @param queryName
+   * @return
+   */
+  public StepMeta findConfigurationStep(KettleDataFactory factory, String queryName){
+    
     try
     {
       TransMeta transMeta;
-      if (kettleDataFactory == null)
+      if (factory == null)
       {
-        transMeta = loadTransformation();
+        transMeta = loadTemplate();
       }
       else
       {
         final EmbeddedKettleTransformationProducer query = 
-                      (EmbeddedKettleTransformationProducer) kettleDataFactory.getQuery(queryName);
+                      (EmbeddedKettleTransformationProducer) factory.getQuery(queryName);
         if (query == null)
         {
-          transMeta = loadTransformation();
+          transMeta = loadTemplate();
         }
         else
         {
-          final Document document = DocumentHelper.loadDocumentFromBytes(query.getBigDataTransformationRaw());
+          final Document document = DocumentHelper.loadDocumentFromBytes(query.getTransformationRaw());
           final Node node = XMLHandler.getSubNode(document, TransMeta.XML_TAG);
           transMeta = new TransMeta();
           transMeta.loadXML(node, null, true, null, null);
         }
       }
 
-      final StepMeta step = transMeta.findStep(EmbeddedKettleDataFactoryMetaData.DATA_CONFIGURATION_STEP);
+      step = transMeta.findStep(EmbeddedKettleDataFactoryMetaData.DATA_CONFIGURATION_STEP);
+      cachedMeta = transMeta;
 
-      // dialog OK button clicked ...
-      final StepDialogInterface dlg = createDialog(step, context);
-      if (dlg.open() != null)
+    }catch (Exception e){
+      
+      cachedMeta = null;
+      return null;
+      
+    }
+    
+    return step;
+  }
+  
+  public StepMeta findConfigurationStep(EmbeddedKettleTransformationProducer query){
+    
+    try
+    {
+      TransMeta transMeta;
+      if (query == null)
       {
-        transMeta.addOrReplaceStep(step);
-        final byte[] rawData = transMeta.getXML().getBytes("UTF8");
-        final KettleDataFactory retval = new KettleDataFactory();
-        retval.setMetadata(getMetaData());
-        
-        // TODO: No parameter definitions here!
-        retval.setQuery(queryName,
-            new EmbeddedKettleTransformationProducer(new String[0], new ParameterMapping[0], id, 
-                            EmbeddedKettleDataFactoryMetaData.DATA_CONFIGURATION_STEP, rawData));
-        return retval;
+        transMeta = loadTemplate();
+      }
+      else
+      {
+        final Document document = DocumentHelper.loadDocumentFromBytes(query.getTransformationRaw());
+        final Node node = XMLHandler.getSubNode(document, TransMeta.XML_TAG);
+        transMeta = new TransMeta();
+        transMeta.loadXML(node, null, true, null, null);
       }
 
-      return input;
+      step = transMeta.findStep(EmbeddedKettleDataFactoryMetaData.DATA_CONFIGURATION_STEP);
+      cachedMeta = transMeta;
+
+    }catch (Exception e){
+      
+      cachedMeta = null;
+      return null;
+      
     }
-    catch (Exception e)
-    {
-      context.error(e);
-      return input;
-    }
+    
+    return step;
   }
 
+  public byte[] update() throws UnsupportedEncodingException, KettleException
+  {
+    
+    dialog.onAccept();
+    cachedMeta.addOrReplaceStep(step);
+    final byte[] rawData = cachedMeta.getXML().getBytes("UTF8");
+    return rawData;
+    
+  }
+
+  private TransMeta loadTemplate() throws KettlePluginException, KettleMissingPluginsException, KettleXMLException
+  {
+    final Document document = DocumentHelper.loadDocumentFromPlugin(id);
+    final Node node = XMLHandler.getSubNode(document, TransMeta.XML_TAG);
+    final TransMeta meta = new TransMeta();
+    meta.loadXML(node, null, true, null, null);
+    return meta;
+  }
+  
   public DataFactoryMetaData getMetaData()
   {
     return DataFactoryRegistry.getInstance().getMetaData(id);

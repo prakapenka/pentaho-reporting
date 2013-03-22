@@ -31,7 +31,7 @@ public class EmbeddedTransformationDataSourcePlugin extends KettleDataSourcePlug
     }
     // we are asked to create a new data-factory.
     final KettleDataSourceDialog kettleDataSourceDialog = createKettleDataSourceDialog(context);
-    return kettleDataSourceDialog.performCreateUnifiedDataFactory(context, input, "Query1", 
+    return kettleDataSourceDialog.performCreateUnifiedDataFactory(context, input, selectedQueryName, 
                                                                   changeRecorder, getMetaData());
   }
 
