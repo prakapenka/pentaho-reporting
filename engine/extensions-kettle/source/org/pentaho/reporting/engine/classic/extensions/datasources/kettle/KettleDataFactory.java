@@ -219,7 +219,7 @@ public class KettleDataFactory extends AbstractDataFactory
     return true;
   }
   
-  public DataFactoryMetaData getMetadata() {
+  public DataFactoryMetaData getMetaData() {
     
     if (metadata != null)
     {

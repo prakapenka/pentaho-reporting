@@ -44,7 +44,7 @@ public class EmbeddedKettleDataFactoryMetaData extends DefaultDataFactoryMetaDat
 
   @Override
   public String getDisplayConnectionName(DataFactory dataFactory) {
-    return super.getDisplayConnectionName(dataFactory);
+    return null;
   }
 
   public String getDisplayName(final Locale locale)

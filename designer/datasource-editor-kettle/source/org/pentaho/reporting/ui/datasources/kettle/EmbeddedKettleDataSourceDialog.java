@@ -29,6 +29,8 @@ import javax.swing.event.ListSelectionListener;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.pentaho.reporting.engine.classic.core.designtime.DesignTimeContext;
+import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryMetaData;
+import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryRegistry;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.EmbeddedKettleTransformationProducer;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleDataFactory;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleTransformationProducer;
@@ -111,18 +113,21 @@ public class EmbeddedKettleDataSourceDialog extends KettleDataSourceDialog
   {
     super(designTimeContext, parent);
     datasourceId = id;
+    setTitle(getDialogTitle());
   }
 
   public EmbeddedKettleDataSourceDialog(final DesignTimeContext designTimeContext, final JFrame parent, String id)
   {
     super(designTimeContext, parent);
     datasourceId = id;
+    setTitle(getDialogTitle());
   }
 
   public EmbeddedKettleDataSourceDialog(final DesignTimeContext designTimeContext, String id)
   {
     super(designTimeContext);
     datasourceId = id;
+    setTitle(getDialogTitle());
   }
 
   @Override
@@ -143,6 +148,19 @@ public class EmbeddedKettleDataSourceDialog extends KettleDataSourceDialog
     }
   }
   
+  protected String getDialogTitle(){
+
+    if (datasourceId == null)
+    {
+      return "";
+    }
+
+    DataFactoryMetaData meta = DataFactoryRegistry.getInstance().getMetaData(datasourceId);
+    String displayName = meta.getDisplayName(getLocale());
+    return Messages.getString("KettleEmbeddedDataSourceDialog.Title", displayName);
+    
+  }
+
   protected String getDialogId()
   {
     return "EmbeddedKettleDataSourceDialog";
@@ -165,7 +183,7 @@ public class EmbeddedKettleDataSourceDialog extends KettleDataSourceDialog
         paintQuery();
         if (performEdit() == false)
         {
-          return dataFactory;
+          return null;
         }
         
       } catch(Exception e){
@@ -174,6 +192,7 @@ public class EmbeddedKettleDataSourceDialog extends KettleDataSourceDialog
     }
     
     final KettleDataFactory kettleDataFactory = new KettleDataFactory();
+    kettleDataFactory.setMetadata(dataFactory.getMetaData());
     for (int i = 0; i < queryListModel.getSize(); i++)
     {
       final KettleQueryEntry queryEntry = (KettleQueryEntry) queryListModel.getElementAt(i);

@@ -52,7 +52,7 @@ public class BandedSubReportTest extends TestCase
 
     ReportLayouter l = new ReportLayouter(new ReportRenderContext(masterReport));
     LogicalPageBox layout = l.layout();
-    ModelPrinter.INSTANCE.print(layout);
+    ModelPrinter.print(layout);
 
     MatchFactory.findElementsByAttribute
         (layout, AttributeNames.Core.NAMESPACE, AttributeNames.Core.ELEMENT_TYPE, element.getElementType());

@@ -18,13 +18,11 @@ import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.ui.trans.step.BaseStepGenericXulDialog;
+import org.pentaho.metastore.stores.memory.MemoryMetaStore;
 import org.pentaho.reporting.engine.classic.core.designtime.DesignTimeContext;
-import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryMetaData;
-import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryRegistry;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.DocumentHelper;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.EmbeddedKettleDataFactoryMetaData;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.EmbeddedKettleTransformationProducer;
-import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleDataFactory;
 import org.pentaho.ui.xul.containers.XulVbox;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -81,52 +79,7 @@ public class EmbeddedHelper
     return panel;
   }
 
-  /**
-   * TODO: Currently not used! Check back and delete after code is stable.
-   * 
-   * @param factory
-   * @param queryName
-   * @return
-   */
-  public StepMeta findConfigurationStep(KettleDataFactory factory, String queryName){
-    
-    try
-    {
-      TransMeta transMeta;
-      if (factory == null)
-      {
-        transMeta = loadTemplate();
-      }
-      else
-      {
-        final EmbeddedKettleTransformationProducer query = 
-                      (EmbeddedKettleTransformationProducer) factory.getQuery(queryName);
-        if (query == null)
-        {
-          transMeta = loadTemplate();
-        }
-        else
-        {
-          final Document document = DocumentHelper.loadDocumentFromBytes(query.getTransformationRaw());
-          final Node node = XMLHandler.getSubNode(document, TransMeta.XML_TAG);
-          transMeta = new TransMeta();
-          transMeta.loadXML(node, null, true, null, null);
-        }
-      }
 
-      step = transMeta.findStep(EmbeddedKettleDataFactoryMetaData.DATA_CONFIGURATION_STEP);
-      cachedMeta = transMeta;
-
-    }catch (Exception e){
-      
-      cachedMeta = null;
-      return null;
-      
-    }
-    
-    return step;
-  }
-  
   public StepMeta findConfigurationStep(EmbeddedKettleTransformationProducer query){
     
     try
@@ -176,8 +129,4 @@ public class EmbeddedHelper
     return meta;
   }
   
-  public DataFactoryMetaData getMetaData()
-  {
-    return DataFactoryRegistry.getInstance().getMetaData(id);
-  }
 }

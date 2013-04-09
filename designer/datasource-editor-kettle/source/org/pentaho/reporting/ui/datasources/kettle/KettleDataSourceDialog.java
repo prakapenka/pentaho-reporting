@@ -25,8 +25,6 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.net.URL;
 import java.util.HashSet;
@@ -71,8 +69,6 @@ import org.pentaho.reporting.engine.classic.core.modules.gui.commonswing.Excepti
 import org.pentaho.reporting.engine.classic.core.util.ReportParameterValues;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleDataFactory;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleTransformationProducer;
-import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleQueryEntry;
-import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleTransFromFileProducer;
 import org.pentaho.reporting.libraries.base.util.FilesystemFilter;
 import org.pentaho.reporting.libraries.base.util.IOUtils;
 import org.pentaho.reporting.libraries.base.util.ObjectUtilities;
@@ -762,11 +758,15 @@ public class KettleDataSourceDialog extends CommonDialog
     nameTextField.setEnabled(false);
     nameTextField.getDocument().addDocumentListener(new NameSyncHandler());
 
-    setTitle(Messages.getString("KettleDataSourceDialog.Title"));
+    setTitle(getDialogTitle());
     setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
     setModal(true);
 
     super.init();
+  }
+  
+  protected String getDialogTitle(){
+    return Messages.getString("KettleDataSourceDialog.Title");
   }
 
   protected String getDialogId()
@@ -927,7 +927,7 @@ public class KettleDataSourceDialog extends CommonDialog
     } else
     {
 
-      KettleDataSourceDialog dialog = createEmbeddedKettleDataSourceDialog(context, dataFactory.getMetadata().getName());
+      KettleDataSourceDialog dialog = createEmbeddedKettleDataSourceDialog(context, dataFactory.getMetaData().getName());
       return dialog.performConfiguration(context, dataFactory, queryName);
       
     }

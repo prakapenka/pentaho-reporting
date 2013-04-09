@@ -42,9 +42,9 @@ public class KettleDataFactoryCore extends DefaultDataFactoryCore
   public String getDisplayConnectionName(final DataFactoryMetaData metaData, final DataFactory dataFactory)
   {
     KettleDataFactory df = (KettleDataFactory) dataFactory;
-    if (df.getMetadata() != null)
+    if (df.getMetaData() != null)
     {
-      return df.getMetadata().getDisplayName(Locale.getDefault());
+      return df.getMetaData().getDisplayName(Locale.getDefault());
     }
     return metaData.getDisplayName(Locale.getDefault());
     

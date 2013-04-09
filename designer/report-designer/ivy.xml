@@ -27,8 +27,29 @@
                 transitive="true" changing="true"/>
 
     <!-- reporting engine dependencies -->
+<!-- 
     <dependency org="${reporting-engine.group}" name="pentaho-reporting-engine-classic-core" rev="${project.revision}"
                 transitive="true" changing="true"/>
+ -->                
+           <dependency org="${library.group}" name="libbase" rev="${dependency.reporting-library.revision}" transitive="true" changing="true"/>
+      <dependency org="${library.group}" name="libdocbundle" rev="${dependency.reporting-library.revision}" transitive="true"
+                  changing="true"/>
+      <dependency org="${library.group}" name="libfonts" rev="${dependency.reporting-library.revision}" transitive="true"
+                  changing="true"/>
+      <dependency org="${library.group}" name="libformat" rev="${dependency.reporting-library.revision}" transitive="true"
+                  changing="true"/>
+      <dependency org="${library.group}" name="libformula" rev="${dependency.reporting-library.revision}" transitive="true"
+                  changing="true"/>
+      <dependency org="${library.group}" name="libloader" rev="${dependency.reporting-library.revision}" transitive="true"
+                  changing="true"/>
+      <dependency org="${library.group}" name="librepository" rev="${dependency.reporting-library.revision}" transitive="true"
+                  changing="true"/>
+      <dependency org="${library.group}" name="libserializer" rev="${dependency.reporting-library.revision}" transitive="true"
+                  changing="true"/>
+      <dependency org="${library.group}" name="libxml" rev="${dependency.reporting-library.revision}" transitive="true" changing="true"/>
+      <dependency org="${library.group}" name="libswing" rev="${dependency.reporting-library.revision}" transitive="true" changing="true"/>
+      <dependency org="${library.group}" name="flute" rev="${dependency.reporting-library.revision}" transitive="true" changing="true" />
+             
     <dependency org="${reporting-engine.group}" name="pentaho-reporting-engine-classic-extensions"
                 rev="${project.revision}" transitive="true" changing="true"/>
     <dependency org="${reporting-engine.group}" name="pentaho-reporting-engine-classic-extensions-scripting"
