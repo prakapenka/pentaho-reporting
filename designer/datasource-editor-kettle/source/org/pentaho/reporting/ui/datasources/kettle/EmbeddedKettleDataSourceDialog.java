@@ -17,6 +17,8 @@
 
 package org.pentaho.reporting.ui.datasources.kettle;
 
+import java.awt.Component;
+import java.awt.Container;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
@@ -48,6 +50,15 @@ public class EmbeddedKettleDataSourceDialog extends KettleDataSourceDialog
   private String datasourceId = null;
   private JPanel datasourcePanel;
   
+  /**
+   * This listener is registered with the XUL dialog. A XUL binding 
+   * on the fields collection will send a propertyChange notification
+   * when the number of fields configured changes... if more than zero, 
+   * enable the preview button, otherwise disable. 
+   * 
+   * @author gmoran
+   *
+   */
   protected class PreviewChangeListener implements PropertyChangeListener
   {
 
@@ -77,12 +88,14 @@ public class EmbeddedKettleDataSourceDialog extends KettleDataSourceDialog
       {
         nameTextField.setEnabled(false);
         editParameterAction.setEnabled(false);
+        setPanelEnabled(false, datasourcePanel);
         return;
       }
 
       inUpdateFromList = true;
       nameTextField.setEnabled(true);
-
+      setPanelEnabled(true, datasourcePanel);
+      
       try
       {
 
@@ -144,6 +157,7 @@ public class EmbeddedKettleDataSourceDialog extends KettleDataSourceDialog
   
       KettleEmbeddedQueryEntry entry = new KettleEmbeddedQueryEntry(null,datasourceId,null);
       entry.repaint(datasourcePanel, designTimeContext, new PreviewChangeListener());
+      setPanelEnabled(false, datasourcePanel);
       
     }
   }
@@ -230,4 +244,48 @@ public class EmbeddedKettleDataSourceDialog extends KettleDataSourceDialog
   {
     return new EmbeddedQueryNameListSelectionListener();
   }
+  
+  /**
+   * This method makes it possible t control any panel that gets rendered via XUL, without 
+   * having to create hooks or listeners intot he XUL dialog. The presence of a query object 
+   * dictates whether the panel should be anabled or disabled.
+   * 
+   * @param enable enable/disable the configuration panel
+   * @param c 
+   */
+  private void setPanelEnabled(boolean enable, Component c)
+  {
+    if (null == c)
+    {
+        return;
+    }
+        
+    Container container = null;
+    if (c instanceof Container)
+    {
+      container = (Container)c;
+    }
+    
+    if (container != null)
+    {
+      Component[] components = container.getComponents();
+      for (int i = 0; i < container.getComponentCount(); i++) 
+      {
+        Component component = components[i];
+        setPanelEnabled(enable, component);
+      }
+      
+    }
+    c.setEnabled(enable);
+  }
+
+  @Override
+  protected void clearComponents() {
+    final KettleEmbeddedQueryEntry kettleQueryEntry = (KettleEmbeddedQueryEntry) queryNameList.getSelectedValue();
+    kettleQueryEntry.clear();
+    super.clearComponents();
+    
+  }
+  
+  
 }

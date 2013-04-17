@@ -23,7 +23,6 @@ import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.net.URL;
@@ -57,14 +56,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.reporting.engine.classic.core.AbstractReportDefinition;
-import org.pentaho.reporting.engine.classic.core.DataFactory;
 import org.pentaho.reporting.engine.classic.core.MasterReport;
 import org.pentaho.reporting.engine.classic.core.ReportDataFactoryException;
-import org.pentaho.reporting.engine.classic.core.designtime.DataFactoryChangeRecorder;
 import org.pentaho.reporting.engine.classic.core.designtime.DesignTimeContext;
 import org.pentaho.reporting.engine.classic.core.designtime.DesignTimeUtil;
 import org.pentaho.reporting.engine.classic.core.designtime.datafactory.DataFactoryEditorSupport;
-import org.pentaho.reporting.engine.classic.core.metadata.DataFactoryMetaData;
 import org.pentaho.reporting.engine.classic.core.modules.gui.commonswing.ExceptionDialog;
 import org.pentaho.reporting.engine.classic.core.util.ReportParameterValues;
 import org.pentaho.reporting.engine.classic.extensions.datasources.kettle.KettleDataFactory;
@@ -496,10 +492,8 @@ public class KettleDataSourceDialog extends CommonDialog
       inUpdateFromList = true;
       try
       {
+        clearComponents();
         queryListModel.removeElement(selectedValue);
-        nameTextField.setText("");
-        fileTextField.setText("");
-        stepsList.setListData(new Object[]{});
       }
       finally
       {
@@ -885,21 +879,6 @@ public class KettleDataSourceDialog extends CommonDialog
 
   }
 
-  public KettleDataFactory performCreateUnifiedDataFactory (final DesignTimeContext context,
-                                                      final DataFactory dataFactory,
-                                                      final String queryName,
-                                                      final DataFactoryChangeRecorder changeRecorder, 
-                                                      final DataFactoryMetaData metaData)
-  {
-      
-    KettleDataFactory factory = (dataFactory == null) ? new KettleDataFactory() : (KettleDataFactory)dataFactory;
-    factory.setMetadata(metaData);
-
-    KettleDataSourceDialog dialog = createEmbeddedKettleDataSourceDialog(context, metaData.getName());
-    return dialog.performConfiguration(context, factory, queryName);
-      
-  }
-
   public KettleDataFactory performConfiguration(DesignTimeContext context, final KettleDataFactory dataFactory,
                                                 final String queryName)
   {
@@ -924,13 +903,10 @@ public class KettleDataSourceDialog extends CommonDialog
 
       return kettleDataFactory;
 
-    } else
-    {
-
-      KettleDataSourceDialog dialog = createEmbeddedKettleDataSourceDialog(context, dataFactory.getMetaData().getName());
-      return dialog.performConfiguration(context, dataFactory, queryName);
-      
     }
+    // TODO: not sure about this yet... do we still need the if.. check above?
+    // Need to test with mixed mode, unrenderable templates to determine best logic...
+    return dataFactory;
   }
   
   protected void loadData(final KettleDataFactory dataFactory, final String selectedQueryName)
@@ -974,29 +950,17 @@ public class KettleDataSourceDialog extends CommonDialog
   {
       return new KettleQueryEntry(queryName);
   }
-  
-  protected KettleDataSourceDialog createEmbeddedKettleDataSourceDialog(final DesignTimeContext context, String id)
-  {
-    final KettleDataSourceDialog editor;
-    final Window window = context.getParentWindow();
-    if (window instanceof JDialog)
-    {
-      editor = new EmbeddedKettleDataSourceDialog(context, (JDialog) window, id);
-    }
-    else if (window instanceof JFrame)
-    {
-      editor = new EmbeddedKettleDataSourceDialog(context, (JFrame) window, id);
-    }
-    else
-    {
-      editor = new EmbeddedKettleDataSourceDialog(context, id);
-    }
-    return editor;
-  }
 
   protected ListSelectionListener getQueryNameListener()
   {
     return new QueryNameListSelectionListener();
+  }
+  
+  protected void clearComponents()
+  {
+    nameTextField.setText("");
+    fileTextField.setText("");
+    stepsList.setListData(new Object[]{});
   }
 
 }

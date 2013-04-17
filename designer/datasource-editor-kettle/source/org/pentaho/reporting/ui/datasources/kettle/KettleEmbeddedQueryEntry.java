@@ -31,24 +31,31 @@ public class KettleEmbeddedQueryEntry extends KettleQueryEntry {
 
   @Override
   protected void loadTransformation(ResourceManager resourceManager, ResourceKey contextKey)
-      throws ReportDataFactoryException, KettleException {
+      throws ReportDataFactoryException, KettleException 
+  {
+  
     final EmbeddedKettleTransformationProducer producer = (EmbeddedKettleTransformationProducer)createProducer();
     final TransMeta transMeta = producer.loadTransformation(contextKey);
     declaredParameters = transMeta.listParameters();
+  
   }
 
   @Override
-  public String getSelectedStep() {
+  public String getSelectedStep() 
+  {
     return EmbeddedKettleDataFactoryMetaData.DATA_RETRIEVAL_STEP;
   }
 
   @Override
-  public KettleTransformationProducer createProducer(){
+  public KettleTransformationProducer createProducer()
+  {
     
-    try {
+    try 
+    {
       update();
-    } catch (ReportDataFactoryException e) {
-      e.printStackTrace();
+    } catch (ReportDataFactoryException e) 
+    {
+       // TODO DO something here!
     }
     final String[] argumentFields = getArguments();
     final ParameterMapping[] varNames = getParameters();
@@ -56,20 +63,30 @@ public class KettleEmbeddedQueryEntry extends KettleQueryEntry {
     return new EmbeddedKettleTransformationProducer(argumentFields, varNames, pluginId, getSelectedStep(),raw);
   }
 
-  public void repaint(JPanel datasourcePanel, DesignTimeContext designTimeContext, PropertyChangeListener l) {
-    StepMeta step = helper.findConfigurationStep((EmbeddedKettleTransformationProducer)createProducer());
+  public void repaint(JPanel datasourcePanel, DesignTimeContext designTimeContext, PropertyChangeListener l) 
+  {
     datasourcePanel.removeAll();
-    datasourcePanel.add(helper.getDialogPanel(step, designTimeContext, l));
+    datasourcePanel.add(helper.getDialogPanel(createProducer(), designTimeContext, l));
     datasourcePanel.revalidate();
     datasourcePanel.getParent().repaint();
+    
+    
   }
 
-  public void update() throws ReportDataFactoryException{
-    try {
+  public void update() throws ReportDataFactoryException
+  {
+    try 
+    {
       raw = helper.update();
-    } catch (Exception e) {
+    } catch (Exception e) 
+    {
       throw new ReportDataFactoryException("Critical error: Not able to update query entry.", e);
     }
+  }
+
+  public void clear() 
+  {
+    helper.clear();
   }
   
 }
