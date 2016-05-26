@@ -21,10 +21,12 @@ import org.pentaho.reporting.engine.classic.core.event.ReportEvent;
 import org.pentaho.reporting.engine.classic.core.states.ReportStateKey;
 import org.pentaho.reporting.engine.classic.core.util.BulkArrayList;
 import org.pentaho.reporting.engine.classic.core.util.Sequence;
+import org.pentaho.reporting.engine.classic.core.util.StateKeysGroupHandler;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.math.BigDecimal;
+import java.util.Objects;
 
 /**
  * A report function that calculates the sum of one field (column) from the Data-Row. This function produces a global
@@ -50,10 +52,13 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
   protected static final BigDecimal ZERO = new BigDecimal( 0.0 );
 
   private static final int CAPACITY = 30;
-  private transient BulkArrayList<ReportStateKey> stateKeys;
-  private transient BulkArrayList<Sequence<BigDecimal>> sequences;
 
-  private transient int lastGroupSequenceNumber;
+  /*private transient BulkArrayList<ReportStateKey> stateKeys;
+  private transient BulkArrayList<Sequence<BigDecimal>> sequences;*/
+
+  protected TotalGroupSumFunctionHandler groupHandler;
+
+  //private transient int lastGroupSequenceNumber;
 
   /**
    * The field that should be evaluated.
@@ -67,16 +72,16 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
   /**
    * The currently computed result.
    */
-  private transient Sequence<BigDecimal> result;
+  //private transient Sequence<BigDecimal> result;
   /**
    * The global state key is used to store the result for the whole report.
    */
-  private transient ReportStateKey globalStateKey;
+  //private transient ReportStateKey globalStateKey;
 
   /**
    * The current group key is used to store the result for the current group.
    */
-  protected transient ReportStateKey currentGroupKey;
+  //protected transient ReportStateKey currentGroupKey;
 
   private String crosstabFilterGroup;
 
@@ -86,8 +91,10 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
    * Initially the function has no name...be sure to assign one before using the function.
    */
   public TotalGroupSumFunction() {
-    this.stateKeys = new BulkArrayList<>( CAPACITY );
-    this.sequences = new BulkArrayList<>( CAPACITY );
+    /*this.stateKeys = new BulkArrayList<>( CAPACITY );
+    this.sequences = new BulkArrayList<>( CAPACITY );*/
+
+    this.groupHandler = new TotalGroupSumFunctionHandler();
   }
 
   /**
@@ -96,28 +103,36 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
    * @param event the event.
    */
   public void reportInitialized( final ReportEvent event ) {
-    globalStateKey = event.getState().getProcessKey();
+    ReportStateKey key = event.getState().getProcessKey();
+    //globalStateKey = event.getState().getProcessKey();
     if ( isPrepareRunLevel( event ) ) {
-      result = new Sequence<>();
+      //result = new Sequence<>();
 
-      this.stateKeys.clear();
+      /*this.stateKeys.clear();
       this.sequences.clear();
 
       // first element is always global state key.
       this.stateKeys.add( globalStateKey );
       // and it's result
-      this.sequences.add( result );
+      this.sequences.add( result );*/
 
-      lastGroupSequenceNumber = 0;
+      //lastGroupSequenceNumber = 0;
+
+      //debug
+      this.groupHandler.reportInitialized( key, true );
+
     } else {
 
-      if ( sequences.size() > 0 ) {
+      //debug
+      this.groupHandler.reportInitialized( key, false );
+
+      /*if ( sequences.size() > 0 ) {
         result = sequences.get( 0 );
       } else {
         result = null;
       }
 
-      lastGroupSequenceNumber = 0;
+      lastGroupSequenceNumber = 0;*/
     }
   }
 
@@ -132,12 +147,14 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
    */
   public void groupStarted( final ReportEvent event ) {
     if ( FunctionUtilities.isDefinedGroup( getGroup(), event ) ) {
-      currentGroupKey = event.getState().getProcessKey();
+      /*currentGroupKey = event.getState().getProcessKey();
 
-      boolean isGlobalKey = currentGroupKey.equals( globalStateKey );
+      boolean isGlobalKey = currentGroupKey.equals( globalStateKey );*/
+
+      ReportStateKey key = event.getState().getProcessKey();
 
       if ( isPrepareRunLevel( event ) ) {
-        clear();
+        /*clear();
 
         if ( isGlobalKey ) {
           // global state key is always 0 position
@@ -150,10 +167,18 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
           } else {
             sequences.set( pos, result );
           }
-        }
+        }*/
+
+        //debug
+        groupHandler.groupStarted( key, true );
+
+
       } else {
+        //debug
+        groupHandler.groupStarted( key, false );
+
         // Activate the current group, which was filled in the prepare run.
-        if ( isGlobalKey ) {
+        /*if ( isGlobalKey ) {
           result = sequences.get( 0 );
         } else {
           int found = groupPos( stateKeys, currentGroupKey );
@@ -163,17 +188,29 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
             result = sequences.get( found );
           }
         }
+
+        if ( !Objects.equals( groupHandler.getResult(), result ) ) {
+          System.out.println( "oops!" );
+        }*/
+
+
       }
     }
 
     if ( FunctionUtilities.isDefinedGroup( getCrosstabFilterGroup(), event ) ) {
       final int groupIndex = event.getState().getCurrentGroupIndex();
-      this.lastGroupSequenceNumber = (int) event.getState().getCrosstabColumnSequenceCounter( groupIndex );
+      //this.lastGroupSequenceNumber = (int) event.getState().getCrosstabColumnSequenceCounter( groupIndex );
+
+      int updatedLastGroupSequenceNumber = (int) event.getState().getCrosstabColumnSequenceCounter( groupIndex );
+
+      //debug
+      groupHandler.setLastGroupSequenceNumber( updatedLastGroupSequenceNumber );
+
     }
   }
 
   // from head or from tail?
-  private int groupPos( final BulkArrayList<ReportStateKey> list, final ReportStateKey key ) {
+  /*private int groupPos( final BulkArrayList<ReportStateKey> list, final ReportStateKey key ) {
     if ( list.size() == 0 || key == null ) {
       return -1;
     }
@@ -187,13 +224,13 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
       }
     }
     return -1;
-  }
+  }*/
 
-  protected void clear() {
+  /*protected void clear() {
     result = new Sequence<>();
     lastGroupSequenceNumber = 0;
 
-  }
+  }*/
 
   /**
    * Receives notification that a row of data is being processed.
@@ -201,7 +238,7 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
    * @param event the event.
    */
   public void itemsAdvanced( final ReportEvent event ) {
-    if ( field == null ) {
+    /*if ( field == null ) {
       return;
     }
 
@@ -219,13 +256,21 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
       result.set( lastGroupSequenceNumber, value );
     } else {
       result.set( lastGroupSequenceNumber, oldValue.add( value ) );
-    }
+    }*/
+
+    //debug
+    groupHandler.itemsAdvanced( event );
+
+    /*if ( !Objects.equals( result, groupHandler.getResult() ) ) {
+      System.out.println( "oops!" );
+    }*/
+
   }
 
   public Object clone() throws CloneNotSupportedException {
     final TotalGroupSumFunction o = (TotalGroupSumFunction) super.clone();
 
-    o.stateKeys = new BulkArrayList<>( stateKeys.size() );
+    /*o.stateKeys = new BulkArrayList<>( stateKeys.size() );
     o.sequences = new BulkArrayList<>( sequences.size() );
 
     boolean resultNotNull = result != null;
@@ -263,7 +308,9 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
       } else if ( currentGroupKeyPosition > 0 ) {
         o.sequences.set( currentGroupKeyPosition, o.result );
       }
-    }
+    }*/
+
+    o.groupHandler = (TotalGroupSumFunctionHandler) groupHandler.clone();
 
     return o;
   }
@@ -271,7 +318,11 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
   public void summaryRowSelection( final ReportEvent event ) {
     if ( FunctionUtilities.isDefinedGroup( getCrosstabFilterGroup(), event ) ) {
       final int groupIndex = event.getState().getCurrentGroupIndex();
-      this.lastGroupSequenceNumber = (int) event.getState().getCrosstabColumnSequenceCounter( groupIndex );
+      //this.lastGroupSequenceNumber = (int) event.getState().getCrosstabColumnSequenceCounter( groupIndex );
+
+      int updated = (int) event.getState().getCrosstabColumnSequenceCounter( groupIndex );
+
+      groupHandler.setLastGroupSequenceNumber( updated );
     }
   }
 
@@ -302,11 +353,13 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
    * @return The value of the function.
    */
   public Object getValue() {
-    if ( result == null ) {
+    /*if ( result == null ) {
       return ZERO;
-    }
+    }*/
 
-    final BigDecimal value = result.get( lastGroupSequenceNumber );
+    //final BigDecimal value = result.get( lastGroupSequenceNumber );
+
+    final BigDecimal value = groupHandler.getValue();
     if ( value == null ) {
       return ZERO;
     }
@@ -339,9 +392,10 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
    */
   public Expression getInstance() {
     final TotalGroupSumFunction function = (TotalGroupSumFunction) super.getInstance();
-    function.result = null;
+    /*function.result = null;
     function.stateKeys = new BulkArrayList<>( CAPACITY );
-    function.sequences = new BulkArrayList<>( CAPACITY );
+    function.sequences = new BulkArrayList<>( CAPACITY );*/
+    this.groupHandler = new TotalGroupSumFunctionHandler();
 
     return function;
   }
@@ -355,10 +409,12 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
    */
   private void readObject( final ObjectInputStream in ) throws IOException, ClassNotFoundException {
     in.defaultReadObject();
-    this.result = null;
+    /*this.result = null;
 
     this.stateKeys = new BulkArrayList<>( CAPACITY );
-    this.sequences = new BulkArrayList<>( CAPACITY );
+    this.sequences = new BulkArrayList<>( CAPACITY );*/
+
+    this.groupHandler = new TotalGroupSumFunctionHandler();
   }
 
   public String getCrosstabFilterGroup() {
@@ -367,5 +423,31 @@ public class TotalGroupSumFunction extends AbstractFunction implements FieldAggr
 
   public void setCrosstabFilterGroup( final String crosstabFilterGroup ) {
     this.crosstabFilterGroup = crosstabFilterGroup;
+  }
+
+  class TotalGroupSumFunctionHandler extends StateKeysGroupHandler<BigDecimal> {
+
+    @Override public void itemsAdvanced( ReportEvent event ) {
+      if ( field == null ) {
+        return;
+      }
+
+      if ( isPrepareRunLevel( event ) == false ) {
+        return;
+      }
+
+      final BigDecimal value = ExpressionUtilities.convertToBigDecimal( event.getDataRow().get( getField() ) );
+      if ( value == null ) {
+        return;
+      }
+
+      final BigDecimal oldValue = this.getValue();
+      if ( oldValue == null ) {
+        this.setLastGroupResult( value );
+      } else {
+        setLastGroupResult( oldValue.add( value ) );
+      }
+    }
+
   }
 }

@@ -20,6 +20,7 @@ package org.pentaho.reporting.engine.classic.core.function;
 import org.pentaho.reporting.engine.classic.core.event.PageEventListener;
 import org.pentaho.reporting.engine.classic.core.event.ReportEvent;
 import org.pentaho.reporting.engine.classic.core.states.LayoutProcess;
+import org.pentaho.reporting.engine.classic.core.states.ReportStateKey;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -43,6 +44,7 @@ public class TotalPageSumFunction extends TotalGroupSumFunction implements PageE
    * Default Constructor.
    */
   public TotalPageSumFunction() {
+    super();
     values = new PageGroupValues();
   }
 
@@ -73,7 +75,8 @@ public class TotalPageSumFunction extends TotalGroupSumFunction implements PageE
    */
   public void pageStarted( final ReportEvent event ) {
     pageIndex++;
-    clear();
+
+    //clear();
   }
 
   /**
@@ -88,10 +91,12 @@ public class TotalPageSumFunction extends TotalGroupSumFunction implements PageE
   }
 
   public Object getValue() {
+    ReportStateKey currentGroupKey = groupHandler.getCurrentGroupKey();
     return values.get( pageIndex, currentGroupKey );
   }
 
   private void storeValue( final ReportEvent event ) {
+    ReportStateKey currentGroupKey = groupHandler.getCurrentGroupKey();
     if ( isPrepareRunLevel( event ) ) {
       values.put( pageIndex, currentGroupKey, super.getValue() );
     }
