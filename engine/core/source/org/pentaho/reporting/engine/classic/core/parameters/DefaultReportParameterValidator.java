@@ -41,69 +41,13 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 public class DefaultReportParameterValidator implements ReportParameterValidator {
-  private static class TrustedParameterContext implements ParameterContext {
-    private ParameterContext context;
-    private ReportEnvironmentDataRow environmentDataRow;
-    private ReportParameterValues trustedValues;
-
-    private TrustedParameterContext( final ParameterContext context ) {
-      this.context = context;
-      this.environmentDataRow = new ReportEnvironmentDataRow( context.getReportEnvironment() );
-      this.trustedValues = new ReportParameterValues();
-    }
-
-    public DataRow getParameterData() {
-      return new CompoundDataRow( environmentDataRow, trustedValues );
-    }
-
-    public ReportParameterValues getTrustedValues() {
-      return trustedValues;
-    }
-
-    public DocumentMetaData getDocumentMetaData() {
-      return context.getDocumentMetaData();
-    }
-
-    public ReportEnvironment getReportEnvironment() {
-      return context.getReportEnvironment();
-    }
-
-    public DataFactory getDataFactory() {
-      return context.getDataFactory();
-    }
-
-    public ResourceBundleFactory getResourceBundleFactory() {
-      return context.getResourceBundleFactory();
-    }
-
-    public ResourceKey getContentBase() {
-      return context.getContentBase();
-    }
-
-    public ResourceManager getResourceManager() {
-      return context.getResourceManager();
-    }
-
-    public Configuration getConfiguration() {
-      return context.getConfiguration();
-    }
-
-    public void close() throws ReportDataFactoryException {
-      // not needed..
-    }
-
-    public PerformanceMonitorContext getPerformanceMonitorContext() {
-      return context.getPerformanceMonitorContext();
-    }
-  }
-
   private static final Log logger = LogFactory.getLog( DefaultReportParameterValidator.class );
 
   public DefaultReportParameterValidator() {
   }
 
   public ValidationResult validate( ValidationResult result, final ReportParameterDefinition parameterDefinition,
-      final ParameterContext parameterContext ) throws ReportProcessingException {
+                                    final ParameterContext parameterContext ) throws ReportProcessingException {
     if ( parameterContext == null ) {
       throw new NullPointerException();
     }
@@ -116,7 +60,7 @@ public class DefaultReportParameterValidator implements ReportParameterValidator
     }
 
     PerformanceLoggingStopWatch sw =
-        parameterContext.getPerformanceMonitorContext().createStopWatch( PerformanceTags.REPORT_PARAMETER );
+      parameterContext.getPerformanceMonitorContext().createStopWatch( PerformanceTags.REPORT_PARAMETER );
     try {
       sw.start();
 
@@ -124,11 +68,12 @@ public class DefaultReportParameterValidator implements ReportParameterValidator
       final ParameterDefinitionEntry[] parameterDefinitionEntries = parameterDefinition.getParameterDefinitions();
 
       for ( int i = 0; i < parameterDefinitionEntries.length; i++ ) {
-        final ParameterDefinitionEntry parameterDefinitionEntry = parameterDefinitionEntries[i];
+        final ParameterDefinitionEntry parameterDefinitionEntry = parameterDefinitionEntries[ i ];
         final String parameterName = parameterDefinitionEntry.getName();
-        final Object untrustedValue = parameterContext.getParameterData().get( parameterName );
-
-        validateSingleParameter( result, trustedParameterContext, parameterDefinitionEntry, untrustedValue );
+        if ( !result.isSkipValidation( parameterName ) ) {
+          final Object untrustedValue = parameterContext.getParameterData().get( parameterName );
+          validateSingleParameter( result, trustedParameterContext, parameterDefinitionEntry, untrustedValue );
+        }
       }
       result.setParameterValues( trustedParameterContext.getTrustedValues() );
       return result;
@@ -138,8 +83,9 @@ public class DefaultReportParameterValidator implements ReportParameterValidator
   }
 
   private void validateSingleParameter( final ValidationResult result,
-      final TrustedParameterContext trustedParameterContext, final ParameterDefinitionEntry parameterDefinitionEntry,
-      Object untrustedValue ) throws ReportProcessingException {
+                                        final TrustedParameterContext trustedParameterContext,
+                                        final ParameterDefinitionEntry parameterDefinitionEntry,
+                                        Object untrustedValue ) throws ReportProcessingException {
     final boolean reevaluatePossible = untrustedValue != null;
 
     Object defaultValue = null;
@@ -159,8 +105,8 @@ public class DefaultReportParameterValidator implements ReportParameterValidator
     final ReportParameterValues tempValue = new ReportParameterValues( trustedParameterContext.getTrustedValues() );
     tempValue.put( parameterName, untrustedValue );
     final Object computedValue =
-        FormulaParameterEvaluator.computePostProcessingValue( result, trustedParameterContext, tempValue,
-            parameterDefinitionEntry, untrustedValue, defaultValue );
+      FormulaParameterEvaluator.computePostProcessingValue( result, trustedParameterContext, tempValue,
+        parameterDefinitionEntry, untrustedValue, defaultValue );
 
     if ( isValueMissingForMandatoryParameterCheck( parameterDefinitionEntry, computedValue ) ) {
       // as the post processing expression failed or returned <null>, the computed value
@@ -168,7 +114,7 @@ public class DefaultReportParameterValidator implements ReportParameterValidator
       // and set the default value as current value, so that the other parameters can continue.
       trustedParameterContext.getTrustedValues().put( parameterName, null );
       result.addError( parameterName, new ValidationMessage( Messages.getInstance().getString(
-          "DefaultReportParameterValidator.ParameterIsMandatory" ) ) );
+        "DefaultReportParameterValidator.ParameterIsMandatory" ) ) );
       return;
     }
 
@@ -177,9 +123,9 @@ public class DefaultReportParameterValidator implements ReportParameterValidator
         final Class parameterType = parameterDefinitionEntry.getValueType();
         if ( parameterType.isInstance( computedValue ) == false ) {
           logger.warn( "Parameter validation error: Value cannot be matched due to invalid value type '"
-              + parameterDefinitionEntry.getName() + "' with value '" + computedValue + "'" );
+            + parameterDefinitionEntry.getName() + "' with value '" + computedValue + "'" );
           result.addError( parameterName, new ValidationMessage( Messages.getInstance().getString(
-              "DefaultReportParameterValidator.ParameterIsInvalidType" ) ) );
+            "DefaultReportParameterValidator.ParameterIsInvalidType" ) ) );
           trustedParameterContext.getTrustedValues().put( parameterName, null );
           return;
         }
@@ -202,13 +148,13 @@ public class DefaultReportParameterValidator implements ReportParameterValidator
           logger.debug( "On Validate Single Parameter: = new Object[0]" );
           logger.debug( "On Validate Single Parameter: ------------------------------" );
         }
-        trustedParameterContext.getTrustedValues().put( parameterName, new Object[0] );
+        trustedParameterContext.getTrustedValues().put( parameterName, new Object[ 0 ] );
         return;
       }
 
       if ( computedValue instanceof Object[] == false ) {
         result.addError( parameterName, new ValidationMessage( Messages.getInstance().getString(
-            "DefaultReportParameterValidator.ParameterIsNotAnArray" ) ) );
+          "DefaultReportParameterValidator.ParameterIsNotAnArray" ) ) );
         trustedParameterContext.getTrustedValues().put( parameterName, null );
         if ( logger.isDebugEnabled() ) {
           logger.debug( "On Validate Single Parameter: = " + null );
@@ -230,11 +176,11 @@ public class DefaultReportParameterValidator implements ReportParameterValidator
     }
 
     final ValidationMessage message =
-        computeValidListValue( listParameter, trustedParameterContext, parameterType, values );
+      computeValidListValue( listParameter, trustedParameterContext, parameterType, values );
     if ( message != null ) {
       if ( reevaluatePossible
-          && "true".equals( listParameter.getParameterAttribute( ParameterAttributeNames.Core.NAMESPACE,
-              ParameterAttributeNames.Core.RE_EVALUATE_ON_FAILED_VALUES, trustedParameterContext ) ) ) {
+        && "true".equals( listParameter.getParameterAttribute( ParameterAttributeNames.Core.NAMESPACE,
+        ParameterAttributeNames.Core.RE_EVALUATE_ON_FAILED_VALUES, trustedParameterContext ) ) ) {
         validateSingleParameter( result, trustedParameterContext, listParameter, null );
       } else {
         result.addError( parameterName, message );
@@ -254,18 +200,19 @@ public class DefaultReportParameterValidator implements ReportParameterValidator
   }
 
   private ValidationMessage computeValidListValue( final ListParameter listParameter,
-      final ParameterContext parameterContext, final Class parameterType, final Object[] values )
+                                                   final ParameterContext parameterContext, final Class parameterType,
+                                                   final Object[] values )
     throws ReportDataFactoryException {
     for ( int i = 0; i < values.length; i++ ) {
-      Object value = values[i];
+      Object value = values[ i ];
       if ( value != null ) {
         if ( "".equals( value ) ) {
           value = null;
         } else if ( parameterType.isInstance( value ) == false ) {
           logger.warn( "Parameter validation error: Value cannot be matched due to invalid value type '"
-              + listParameter.getName() + "' with value '" + value + "'" );
+            + listParameter.getName() + "' with value '" + value + "'" );
           return new ValidationMessage( Messages.getInstance().getString(
-              "DefaultReportParameterValidator.ParameterIsInvalidType" ) );
+            "DefaultReportParameterValidator.ParameterIsInvalidType" ) );
         }
       }
 
@@ -278,23 +225,24 @@ public class DefaultReportParameterValidator implements ReportParameterValidator
         final boolean found = isValueValid( parameterValues, value );
         if ( found == false ) {
           logger.warn( "Parameter validation error: No such value in the result for '" + listParameter.getName()
-              + "' with value '" + value + "'" );
+            + "' with value '" + value + "'" );
           return new ValidationMessage( Messages.getInstance().getString(
-              "DefaultReportParameterValidator.ParameterIsInvalidValue" ) );
+            "DefaultReportParameterValidator.ParameterIsInvalidValue" ) );
         }
       } catch ( ReportDataFactoryException e ) {
         throw e;
       } catch ( Throwable e ) {
         logger.warn( "Unexpected Parameter validation error", e );
         // overly broad catch, I know, but some creepy code throws ClassNotDefErrors and such around ..
-        return new ValidationMessage( Messages.getInstance().getString( "DefaultReportParameterValidator.GlobalError" ) );
+        return new ValidationMessage(
+          Messages.getInstance().getString( "DefaultReportParameterValidator.GlobalError" ) );
       }
     }
     return null;
   }
 
   private boolean isValueMissingForMandatoryParameterCheck( final ParameterDefinitionEntry entry,
-      final Object computedValue ) {
+                                                            final Object computedValue ) {
     if ( entry.isMandatory() == false ) {
       return false;
     }
@@ -349,5 +297,61 @@ public class DefaultReportParameterValidator implements ReportParameterValidator
       }
     }
     return false;
+  }
+
+  private static class TrustedParameterContext implements ParameterContext {
+    private ParameterContext context;
+    private ReportEnvironmentDataRow environmentDataRow;
+    private ReportParameterValues trustedValues;
+
+    private TrustedParameterContext( final ParameterContext context ) {
+      this.context = context;
+      this.environmentDataRow = new ReportEnvironmentDataRow( context.getReportEnvironment() );
+      this.trustedValues = new ReportParameterValues();
+    }
+
+    public DataRow getParameterData() {
+      return new CompoundDataRow( environmentDataRow, trustedValues );
+    }
+
+    public ReportParameterValues getTrustedValues() {
+      return trustedValues;
+    }
+
+    public DocumentMetaData getDocumentMetaData() {
+      return context.getDocumentMetaData();
+    }
+
+    public ReportEnvironment getReportEnvironment() {
+      return context.getReportEnvironment();
+    }
+
+    public DataFactory getDataFactory() {
+      return context.getDataFactory();
+    }
+
+    public ResourceBundleFactory getResourceBundleFactory() {
+      return context.getResourceBundleFactory();
+    }
+
+    public ResourceKey getContentBase() {
+      return context.getContentBase();
+    }
+
+    public ResourceManager getResourceManager() {
+      return context.getResourceManager();
+    }
+
+    public Configuration getConfiguration() {
+      return context.getConfiguration();
+    }
+
+    public void close() throws ReportDataFactoryException {
+      // not needed..
+    }
+
+    public PerformanceMonitorContext getPerformanceMonitorContext() {
+      return context.getPerformanceMonitorContext();
+    }
   }
 }

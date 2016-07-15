@@ -21,7 +21,11 @@ import org.pentaho.reporting.engine.classic.core.util.ReportParameterValues;
 import org.pentaho.reporting.libraries.base.util.HashNMap;
 
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * A collection containing validation results. If there is at least one error, the collection indicates an error.
@@ -29,13 +33,13 @@ import java.util.Set;
  * @author Thomas Morgner
  */
 public class ValidationResult {
-  private ArrayList messages;
-  private HashNMap propertyMessages;
+  private List<ValidationMessage> messages;
+  private HashNMap<String, ValidationMessage> propertyMessages;
   private ReportParameterValues parameterValues;
 
   public ValidationResult() {
     propertyMessages = new HashNMap();
-    messages = new ArrayList();
+    messages = new ArrayList<>();
   }
 
   public ReportParameterValues getParameterValues() {
@@ -63,18 +67,51 @@ public class ValidationResult {
     propertyMessages.add( parameterName, message );
   }
 
+  /**
+   * Register suggestion to skip parameter validation. It is up to a validator
+   * to follow this suggestion or not.
+   * Not thread safe.
+   *
+   * @param parameterName parameter name to skip
+   */
+  public void skipParameterValidation( final String parameterName ) {
+    this.propertyMessages.add( parameterName, new ValidationMessage( ValidationMessage.Type.SKIP ) );
+  }
+
   public ValidationMessage[] getErrors() {
-    return (ValidationMessage[]) messages.toArray( new ValidationMessage[messages.size()] );
+    List<ValidationMessage> errors = messages.stream()
+      .filter( a -> a.getType().equals( ValidationMessage.Type.ERROR ) ).collect(
+        Collectors.toList() );
+    return errors.toArray( new ValidationMessage[errors.size()] );
   }
 
   public ValidationMessage[] getErrors( final String parameter ) {
-    return (ValidationMessage[]) propertyMessages.toArray( parameter, new ValidationMessage[propertyMessages
-        .getValueCount( parameter )] );
+    Iterable<ValidationMessage> it = () -> propertyMessages.getAll( parameter );
+    List<ValidationMessage> errors = StreamSupport.stream( it.spliterator(), false )
+      .filter( i -> i.getType().equals( ValidationMessage.Type.ERROR ) ).collect( Collectors.toList() );
+    return errors.toArray( new ValidationMessage[errors.size()] );
+  }
+
+  /**
+   * Check if parameter suggested to be not validated (for resources economy etc)
+   *
+   * @param parameter - parameter name to skip
+   * @return - true if parameter was suggested to be not validated, false otherwise.
+   */
+  public boolean isSkipValidation( final String parameter ) {
+    Iterator<ValidationMessage> it = this.propertyMessages.getAll( parameter );
+    while ( it.hasNext() ) {
+      ValidationMessage message = it.next();
+      if ( message.getType().equals( ValidationMessage.Type.SKIP ) ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public String[] getProperties() {
     final Set set = propertyMessages.keySet();
-    return (String[]) set.toArray( new String[set.size()] );
+    return (String[]) set.toArray( new String[ set.size() ] );
   }
 
   public boolean isEmpty() {
@@ -85,16 +122,16 @@ public class ValidationResult {
     final ArrayList<String> l = new ArrayList<String>();
     final ValidationMessage[] messages1 = getErrors();
     for ( int i = 0; i < messages1.length; i++ ) {
-      final ValidationMessage message = messages1[i];
+      final ValidationMessage message = messages1[ i ];
       l.add( message.getMessage() );
     }
     final String[] names = getProperties();
     for ( int i = 0; i < names.length; i++ ) {
-      final String name = names[i];
+      final String name = names[ i ];
       final ValidationMessage[] messages2 = getErrors( name );
-      final ValidationMessage message = messages2[i];
+      final ValidationMessage message = messages2[ i ];
       l.add( name + " => " + message.getMessage() );
     }
-    return l.toArray( new String[l.size()] );
+    return l.toArray( new String[ l.size() ] );
   }
 }

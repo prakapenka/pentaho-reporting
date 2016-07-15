@@ -20,37 +20,56 @@ package org.pentaho.reporting.engine.classic.core.parameters;
 import java.io.Serializable;
 
 public class ValidationMessage implements Serializable {
-  private static final Object[] EMPTY_OBJECT = new Object[0];
 
+  private static final Object[] EMPTY_OBJECT = new Object[ 0 ];
   private String message;
   private Object[] parameters;
-
+  private Type type;
   public ValidationMessage( final String message ) {
-    this( message, ValidationMessage.EMPTY_OBJECT );
+    this( message, ValidationMessage.EMPTY_OBJECT, Type.ERROR );
   }
 
+  public ValidationMessage( final String message, final Type type ) {
+    this( message, ValidationMessage.EMPTY_OBJECT, type );
+  }
+
+  public ValidationMessage( final Type type ) {
+    this( "", ValidationMessage.EMPTY_OBJECT, type );
+  }
+
+  @Deprecated
   public ValidationMessage( final String message, final Object arg ) {
-    this( message, new Object[] { arg } );
+    this( message, new Object[] { arg }, Type.ERROR );
   }
 
+  @Deprecated
   public ValidationMessage( final String message, final Object arg, final Object arg1 ) {
-    this( message, new Object[] { arg, arg1 } );
+    this( message, new Object[] { arg, arg1 }, Type.ERROR );
   }
 
+  @Deprecated
   public ValidationMessage( final String message, final Object arg, final Object arg1, final Object arg2 ) {
-    this( message, new Object[] { arg, arg1, arg2 } );
+    this( message, new Object[] { arg, arg1, arg2 }, Type.ERROR );
   }
 
   public ValidationMessage( final String message, final Object[] parameters ) {
+    this( message, parameters, Type.ERROR );
+  }
+
+  public ValidationMessage( final String message, final Object[] parameters, Type type ) {
     if ( message == null ) {
       throw new NullPointerException();
     }
     if ( parameters == null ) {
       throw new NullPointerException();
     }
+    if ( type == null ) {
+      type = Type.ERROR;
+    }
 
+    this.type = type;
     this.message = message;
-    this.parameters = (Object[]) parameters.clone();
+    this.parameters = parameters.clone();
   }
 
   public String getMessage() {
@@ -58,6 +77,14 @@ public class ValidationMessage implements Serializable {
   }
 
   public Object[] getParameters() {
-    return (Object[]) parameters.clone();
+    return parameters.clone();
+  }
+
+  public Type getType() {
+    return type;
+  }
+
+  public enum Type {
+    ERROR, SKIP
   }
 }
